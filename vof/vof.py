@@ -8,12 +8,15 @@ from vof_visualize import *
 
 def main():
 	initialize()
+	write_png('slice0.png')
 
-	#flags.ptr.snode().parent.parent.clear_data_and_deactivate()
-	#copyFlagsTempToFlags()
-	#flagsTemp.ptr.snode().parent.parent.clear_data_and_deactivate()
-  #copyFlagsToFlagsTemp()
-	write_png()
+	copy_to_temp()
+	clear_and_deactivate_band()
+	grow_interface_band()
+	grow_active_band()
+	grow_ghost_band()
+
+	write_png('slice1.png')
 
 if __name__ == '__main__':
   main()

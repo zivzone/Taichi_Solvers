@@ -10,7 +10,7 @@ def initialize():
 			for kb in range(n_z//block_size):
 				x,y,z = get_block_loc(ib,jb,kb)
 				phi = get_phi(x,y,z)
-				if ti.abs(phi) < dx*block_size*np.sqrt(3.0):
+				if ti.abs(phi) < block_size*np.sqrt(dx*dx + dy*dy + dz*dz):
 					# if the block is near interface
 					# loop over cells in block
 					for ic in range(block_size):
@@ -25,7 +25,7 @@ def initialize():
 
 								phi = get_phi(x,y,z)
 								Flags[i,j,k] = cellFlags.CELL_GHOST
-								if ti.abs(phi) < dx*np.sqrt(3.0):
+								if ti.abs(phi) < np.sqrt(dx*dx + dy*dy + dz*dz):
 									Flags[i,j,k] = cellFlags.CELL_ACTIVE
 
 
@@ -61,7 +61,7 @@ def get_phi_zalesaks_disk(x,y,z):
 	else:
 		phi = c
 
-	return phi
+	return -phi
 
 @ti.func
 def get_phi_cylinder(x,y,z):
@@ -93,7 +93,6 @@ def get_cell_loc(i,j,k):
 @ti.func
 def estimate_C(phi,grad_phi):
 	# estimate volume fraction of cell using level set and its gradient
-	compute_C_eps = 1.0e-08;
 	phim = -ti.abs(phi)
 
 	abs_grad_phi = [0.0,0.0,0.0]
@@ -110,9 +109,9 @@ def estimate_C(phi,grad_phi):
 	d = ti.max(phim + 0.5 * (-dxi + deta + dzeta), 0.0);
 	e = ti.max(phim + 0.5 * ( dxi - deta - dzeta), 0.0);
 	vol = 0.0
-	if dxi > compute_C_eps :
-		if deta > compute_C_eps :
-			if dzeta > compute_C_eps : #  3D
+	if dxi > Czero :
+		if deta > Czero :
+			if dzeta > Czero : #  3D
 				vol = (a*a*a - b*b*b - c*c*c - d*d*d + e*e*e)/(6.0*dxi*deta*dzeta)
 			else:#  2D
 				vol = (a*a - c*c) / (2.0*dxi*deta)
@@ -130,30 +129,34 @@ def estimate_C(phi,grad_phi):
 	return vol
 
 @ti.func
-def init_C_0(x,y,z):
-	phi = get_phi(x,y,z)
-	grad_phi = [0.0,0.0,0.0]
-	grad_phi[0] = .5*(get_phi(x+dx,y,z)-get_phi(x-dx,y,z))
-	grad_phi[1] = .5*(get_phi(x,y+dy,z)-get_phi(x,y-dy,z))
-	grad_phi[2] = .5*(get_phi(x,y,z-dz)-get_phi(x,y,z-dz))
-	C = estimate_C(phi,grad_phi)
-	return C
-
-@ti.func
 def init_C(x,y,z):
 	# split cell into subcells and estimate volume fraction of each, then sum
-	C = 0.0
+	vol = 0.0
 	n = n_init_subcells
 	for ii in range(n):
 		for jj in range(n):
 			for kk in range(n):
-				xc = x - dx/2 + (ii+1)/n*dx
-				yc = y - dy/2 + (jj+1)/n*dy
-				zc = z - dz/2 + (kk+1)/n*dz
+				xc = x - dx/2.0 + (ii+1)/n*dx/2.0
+				yc = y - dy/2.0 + (jj+1)/n*dy/2.0
+				zc = z - dz/2.0 + (kk+1)/n*dz/2.0
+				dxc = dx/n
+				dyc = dy/n
+				dzc = dz/n
+			#	if ( get_phi(xc-.5*dxc,yc-.5*dyc,zc-.5*dzc) > 0 and get_phi(xc+.5*dxc,yc-.5*dyc,zc-.5*dzc) > 0 \
+			#	 and get_phi(xc-.5*dxc,yc+.5*dyc,zc-.5*dzc) > 0 and get_phi(xc+.5*dxc,yc+.5*dyc,zc-.5*dzc) > 0 \
+			#	 and get_phi(xc-.5*dxc,yc-.5*dyc,zc+.5*dzc) > 0 and get_phi(xc+.5*dxc,yc-.5*dyc,zc+.5*dzc) > 0 \
+			#	 and get_phi(xc-.5*dxc,yc+.5*dyc,zc+.5*dzc) > 0 and get_phi(xc+.5*dxc,yc+.5*dyc,zc+.5*dzc) > 0):
+			#		vol = vol + 1.0/(n*n*n)
+			#	elif (get_phi(xc-.5*dxc,yc-.5*dyc,zc-.5*dzc) < 0 and get_phi(xc+.5*dxc,yc-.5*dyc,zc-.5*dzc) < 0 \
+			#	 and  get_phi(xc-.5*dxc,yc+.5*dyc,zc-.5*dzc) < 0 and get_phi(xc+.5*dxc,yc+.5*dyc,zc-.5*dzc) < 0 \
+			#	 and  get_phi(xc-.5*dxc,yc-.5*dyc,zc+.5*dzc) < 0 and get_phi(xc+.5*dxc,yc-.5*dyc,zc+.5*dzc) < 0 \
+			#	 and  get_phi(xc-.5*dxc,yc+.5*dyc,zc+.5*dzc) < 0 and get_phi(xc+.5*dxc,yc+.5*dyc,zc+.5*dzc) < 0):
+			#	 	vol = vol + 0.0
+			#	else:
 				phi = get_phi(xc, yc, zc)
 				grad_phi = [0.0,0.0,0.0]
-				grad_phi[0] = .5*(get_phi(xc+dx/n, yc, zc)-get_phi(xc-dx/n, yc, zc))
-				grad_phi[1] = .5*(get_phi(xc, yc+dy/n, zc)-get_phi(xc, yc-dy/n, zc))
-				grad_phi[2] = .5*(get_phi(xc, yc, zc-dz/n)-get_phi(xc, yc, zc-dz/n))
-				C = C + estimate_C(phi,grad_phi)/(n*n*n)
-	return C
+				grad_phi[0] = 0.5*(get_phi(xc+dxc, yc, zc)-get_phi(xc-dxc, yc, zc))
+				grad_phi[1] = 0.5*(get_phi(xc, yc+dyc, zc)-get_phi(xc, yc-dyc, zc))
+				grad_phi[2] = 0.5*(get_phi(xc, yc, zc+dzc)-get_phi(xc, yc, zc-dzc))
+				vol = vol + estimate_C(phi,grad_phi)/(n*n*n)
+	return vol

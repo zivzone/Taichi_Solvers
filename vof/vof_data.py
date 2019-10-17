@@ -8,21 +8,25 @@ ti.cfg.arch = ti.cuda
 # grid parameters
 n_x = 512
 n_y = 512
-n_z = 4
+n_z = 512
 
 w_x = 1.0
 w_y = 1.0
-w_z = .01
+w_z = 1.0
 
-n_ghost = 0
+n_ghost = 4
 block_size = 4
-n_init_subcells = 1 # must be power of 2
+n_init_subcells = 1
 
 init_phi = 0 # 0 = zalesaks disk, 1 = cylinder
 init_center = [.5, .5 , .5]
 init_width = .05
 init_height = .12
 init_radius = .125
+
+Czero = 1.0e-6
+Cone = 1.0-Czero
+print(Cone)
 
 dx = w_x/n_x
 dy = w_y/n_y
