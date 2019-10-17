@@ -1,0 +1,159 @@
+import taichi as ti
+import math
+from vof_data import *
+
+@ti.kernel
+def initialize():
+	# loop over all blocks
+	for ib in range(n_x//block_size):
+		for jb in range(n_y//block_size):
+			for kb in range(n_z//block_size):
+				x,y,z = get_block_loc(ib,jb,kb)
+				phi = get_phi(x,y,z)
+				if ti.abs(phi) < dx*block_size*np.sqrt(3.0):
+					# if the block is near interface
+					# loop over cells in block
+					for ic in range(block_size):
+						for jc in range(block_size):
+							for kc in range(block_size):
+								i = ic + ib*block_size
+								j = jc + jb*block_size
+								k = kc + kb*block_size
+								x,y,z = get_cell_loc(i,j,k)
+
+								C[i,j,k] = init_C(x,y,z)
+
+								phi = get_phi(x,y,z)
+								Flags[i,j,k] = cellFlags.CELL_GHOST
+								if ti.abs(phi) < dx*np.sqrt(3.0):
+									Flags[i,j,k] = cellFlags.CELL_ACTIVE
+
+
+@ti.func
+def get_phi_zalesaks_disk(x,y,z):
+	# set the initial level set distribution according to Zalesak's notched disk problem
+	c = init_radius-ti.sqrt((x-init_center[0])*(x-init_center[0]) + (y-init_center[1])*(y-init_center[1]));
+	b1 = init_center[0] - 0.5*init_width;
+	b2 = init_center[0] + 0.5*init_width;
+	h1 = init_center[1] - init_radius * np.cos(np.arcsin(0.5*init_width/init_radius));
+	h2 = init_center[1] - init_radius + init_height;
+
+	phi = 0.0
+	if (c >= 0.0 and x <= b1 and y <= h2):
+		bb = b1-x
+		phi = ti.min(c,bb)
+	elif (c >= 0.0 and x >= b2 and y <= h2):
+		bb = x-b2
+		phi = ti.min(c,bb)
+	elif (c >= 0.0 and x >= b1 and x <= b2 and y >= h2):
+		bb = y-h2
+		phi = ti.min(c,bb)
+	elif (c >= 0.0 and x <= b1 and y >= h2):
+		bb = ti.sqrt((x-b1)*(x-b1) + (y-h2)*(y-h2))
+		phi = ti.min(c,bb)
+	elif (c >= 0.0 and x >= b2 and y >= h2):
+		bb = ti.sqrt((x-b2)*(x-b2) + (y-h2)*(y-h2))
+		phi = ti.min(c,bb)
+	elif (x >= b1 and x <= b2 and y <= h2 and y >= h1):
+		phi = -ti.min(ti.abs(x-b1),ti.min(ti.abs(x-b2),ti.abs(y-h2)))
+	elif (x >= b1 and x <= b2 and y <= h1):
+		phi = -ti.min(ti.sqrt((x-b1)*(x-b1)+(y-h1)*(y-h1)), ti.sqrt((x-b2)*(x-b2)+(y-h1)*(y-h1)))
+	else:
+		phi = c
+
+	return phi
+
+@ti.func
+def get_phi_cylinder(x,y,z):
+	# set the initial level set distribution to a cylinder
+	phi = init_radius \
+	- ti.sqrt((x-init_center[0])*(x-init_center[0]) \
+	+ (y-init_center[1])*(y-init_center[1]))
+	return phi
+
+if(init_phi == 0):
+	get_phi = get_phi_zalesaks_disk
+else:
+	get_phi = get_phi_cylinder
+
+@ti.func
+def get_block_loc(ib,jb,kb):
+	x = ib*dx*block_size + dx*block_size/2.0 - n_ghost*dx
+	y = jb*dy*block_size + dy*block_size/2.0 - n_ghost*dy
+	z = kb*dz*block_size + dz*block_size/2.0 - n_ghost*dz
+	return x,y,z
+
+@ti.func
+def get_cell_loc(i,j,k):
+	x = i*dx + dx/2.0 - n_ghost*dx
+	y = j*dy + dy/2.0 - n_ghost*dy
+	z = k*dz + dz/2.0 - n_ghost*dz
+	return x,y,z
+
+@ti.func
+def estimate_C(phi,grad_phi):
+	# estimate volume fraction of cell using level set and its gradient
+	compute_C_eps = 1.0e-08;
+	phim = -ti.abs(phi)
+
+	abs_grad_phi = [0.0,0.0,0.0]
+	abs_grad_phi[0] = ti.abs(grad_phi[0])
+	abs_grad_phi[1] = ti.abs(grad_phi[1])
+	abs_grad_phi[2] = ti.abs(grad_phi[2])
+	dxi   = ti.max(abs_grad_phi[0],ti.max(abs_grad_phi[1],abs_grad_phi[2]))
+	dzeta = ti.min(abs_grad_phi[0],ti.min(abs_grad_phi[1],abs_grad_phi[2]))
+	deta  = abs_grad_phi[0] + abs_grad_phi[1] + abs_grad_phi[2] - dxi - dzeta
+
+	a = ti.max(phim + 0.5 * ( dxi + deta + dzeta), 0.0);
+	b = ti.max(phim + 0.5 * ( dxi + deta - dzeta), 0.0);
+	c = ti.max(phim + 0.5 * ( dxi - deta + dzeta), 0.0);
+	d = ti.max(phim + 0.5 * (-dxi + deta + dzeta), 0.0);
+	e = ti.max(phim + 0.5 * ( dxi - deta - dzeta), 0.0);
+	vol = 0.0
+	if dxi > compute_C_eps :
+		if deta > compute_C_eps :
+			if dzeta > compute_C_eps : #  3D
+				vol = (a*a*a - b*b*b - c*c*c - d*d*d + e*e*e)/(6.0*dxi*deta*dzeta)
+			else:#  2D
+				vol = (a*a - c*c) / (2.0*dxi*deta)
+		else: #  1D
+			vol = (a) / (dxi)
+	else:  #  0D
+		if phim !=  0.0:
+			vol = 0.0
+		else:
+			vol = 0.5
+
+	if phi > 0.0 :
+		vol = 1.0 - vol
+
+	return vol
+
+@ti.func
+def init_C_0(x,y,z):
+	phi = get_phi(x,y,z)
+	grad_phi = [0.0,0.0,0.0]
+	grad_phi[0] = .5*(get_phi(x+dx,y,z)-get_phi(x-dx,y,z))
+	grad_phi[1] = .5*(get_phi(x,y+dy,z)-get_phi(x,y-dy,z))
+	grad_phi[2] = .5*(get_phi(x,y,z-dz)-get_phi(x,y,z-dz))
+	C = estimate_C(phi,grad_phi)
+	return C
+
+@ti.func
+def init_C(x,y,z):
+	# split cell into subcells and estimate volume fraction of each, then sum
+	C = 0.0
+	n = n_init_subcells
+	for ii in range(n):
+		for jj in range(n):
+			for kk in range(n):
+				xc = x - dx/2 + (ii+1)/n*dx
+				yc = y - dy/2 + (jj+1)/n*dy
+				zc = z - dz/2 + (kk+1)/n*dz
+				phi = get_phi(xc, yc, zc)
+				grad_phi = [0.0,0.0,0.0]
+				grad_phi[0] = .5*(get_phi(xc+dx/n, yc, zc)-get_phi(xc-dx/n, yc, zc))
+				grad_phi[1] = .5*(get_phi(xc, yc+dy/n, zc)-get_phi(xc, yc-dy/n, zc))
+				grad_phi[2] = .5*(get_phi(xc, yc, zc-dz/n)-get_phi(xc, yc, zc-dz/n))
+				C = C + estimate_C(phi,grad_phi)/(n*n*n)
+	return C
