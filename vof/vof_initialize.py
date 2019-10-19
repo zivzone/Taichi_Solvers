@@ -18,13 +18,13 @@ def initialize():
 								j = jc + jb*block_size
 								k = kc + kb*block_size
 								x,y,z = get_cell_loc(i,j,k)
-
-								C[i,j,k] = init_C(x,y,z)
-
 								phi = get_phi(x,y,z)
-								Flags[i,j,k] = cellFlags.CELL_GHOST
 								if ti.abs(phi) < np.sqrt(dx*dx + dy*dy + dz*dz):
+									C[i,j,k] = init_C(x,y,z)
 									Flags[i,j,k] = cellFlags.CELL_ACTIVE
+								else:
+									C[i,j,k] = (1.0+phi/ti.abs(phi))/2.0
+									Flags[i,j,k] = cellFlags.CELL_GHOST
 
 
 @ti.func
@@ -138,9 +138,9 @@ def init_C(x,y,z):
 	for ii in range(n):
 		for jj in range(n):
 			for kk in range(n):
-				xc = x - dx/2.0 + (ii+1.0)*dxc/2.0
-				yc = y - dy/2.0 + (jj+1.0)*dyc/2.0
-				zc = z - dz/2.0 + (kk+1.0)*dzc/2.0
+				xc = x - dx/2.0 + dxc/2.0 + dxc*ii
+				yc = y - dy/2.0 + dyc/2.0 + dyc*jj
+				zc = z - dz/2.0 + dzc/2.0 + dzc*kk
 				phi = get_phi(xc, yc, zc)
 				grad_phi = [0.0,0.0,0.0]
 				grad_phi[0] = 0.5*(get_phi(xc+dxc, yc, zc)-get_phi(xc-dxc, yc, zc))

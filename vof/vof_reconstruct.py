@@ -67,9 +67,6 @@ def calc_lsq_vof_error(alpha, m, i, j, k):
 	for dk in range(-1,2):
 		for dj in range(-1,2):
 			for di in range(-1,2):
-				# skip central cell, since the error there should be zero
-				#if (dk==0 and dj==0 and di==0):
-				#	continue
 				a = alpha - (m[0]*di + m[1]*dj + m[2]*dk)
 				error = error + (C[i+di,j+dj,k+dk] - calc_C(a,m))
 	return error
@@ -226,7 +223,7 @@ def ELVIRA(i, j, k):
 			n[1] = -n[1]*rdenom
 			n[2] = -n[2]*rdenom
 			alp =  calc_alpha(C[i,j,k], n)
-			error = 1.0#calc_lsq_vof_error(alp,n,i,j,k)
+			error = calc_lsq_vof_error(alp,n,i,j,k)
 
 			if (error < errorMin):
 				errorMin = error
