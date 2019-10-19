@@ -1,5 +1,3 @@
-import taichi as ti
-import math
 from vof_data import *
 
 @ti.kernel
@@ -61,7 +59,7 @@ def get_phi_zalesaks_disk(x,y,z):
 	else:
 		phi = c
 
-	return -phi
+	return phi
 
 @ti.func
 def get_phi_cylinder(x,y,z):
@@ -71,6 +69,7 @@ def get_phi_cylinder(x,y,z):
 	+ (y-init_center[1])*(y-init_center[1]))
 	return phi
 
+# set the get phi function
 if(init_phi == 0):
 	get_phi = get_phi_zalesaks_disk
 else:
@@ -114,9 +113,9 @@ def estimate_C(phi,grad_phi):
 			if dzeta > Czero : #  3D
 				vol = (a*a*a - b*b*b - c*c*c - d*d*d + e*e*e)/(6.0*dxi*deta*dzeta)
 			else:#  2D
-				vol = (a*a - c*c) / (2.0*dxi*deta)
+				vol = (a*a - c*c)/(2.0*dxi*deta)
 		else: #  1D
-			vol = (a) / (dxi)
+			vol = a/dxi
 	else:  #  0D
 		if phim !=  0.0:
 			vol = 0.0
@@ -133,30 +132,20 @@ def init_C(x,y,z):
 	# split cell into subcells and estimate volume fraction of each, then sum
 	vol = 0.0
 	n = n_init_subcells
+	dxc = dx/n
+	dyc = dy/n
+	dzc = dz/n
 	for ii in range(n):
 		for jj in range(n):
 			for kk in range(n):
-				xc = x - dx/2.0 + (ii+1)/n*dx/2.0
-				yc = y - dy/2.0 + (jj+1)/n*dy/2.0
-				zc = z - dz/2.0 + (kk+1)/n*dz/2.0
-				dxc = dx/n
-				dyc = dy/n
-				dzc = dz/n
-			#	if ( get_phi(xc-.5*dxc,yc-.5*dyc,zc-.5*dzc) > 0 and get_phi(xc+.5*dxc,yc-.5*dyc,zc-.5*dzc) > 0 \
-			#	 and get_phi(xc-.5*dxc,yc+.5*dyc,zc-.5*dzc) > 0 and get_phi(xc+.5*dxc,yc+.5*dyc,zc-.5*dzc) > 0 \
-			#	 and get_phi(xc-.5*dxc,yc-.5*dyc,zc+.5*dzc) > 0 and get_phi(xc+.5*dxc,yc-.5*dyc,zc+.5*dzc) > 0 \
-			#	 and get_phi(xc-.5*dxc,yc+.5*dyc,zc+.5*dzc) > 0 and get_phi(xc+.5*dxc,yc+.5*dyc,zc+.5*dzc) > 0):
-			#		vol = vol + 1.0/(n*n*n)
-			#	elif (get_phi(xc-.5*dxc,yc-.5*dyc,zc-.5*dzc) < 0 and get_phi(xc+.5*dxc,yc-.5*dyc,zc-.5*dzc) < 0 \
-			#	 and  get_phi(xc-.5*dxc,yc+.5*dyc,zc-.5*dzc) < 0 and get_phi(xc+.5*dxc,yc+.5*dyc,zc-.5*dzc) < 0 \
-			#	 and  get_phi(xc-.5*dxc,yc-.5*dyc,zc+.5*dzc) < 0 and get_phi(xc+.5*dxc,yc-.5*dyc,zc+.5*dzc) < 0 \
-			#	 and  get_phi(xc-.5*dxc,yc+.5*dyc,zc+.5*dzc) < 0 and get_phi(xc+.5*dxc,yc+.5*dyc,zc+.5*dzc) < 0):
-			#	 	vol = vol + 0.0
-			#	else:
+				xc = x - dx/2.0 + (ii+1.0)*dxc/2.0
+				yc = y - dy/2.0 + (jj+1.0)*dyc/2.0
+				zc = z - dz/2.0 + (kk+1.0)*dzc/2.0
 				phi = get_phi(xc, yc, zc)
 				grad_phi = [0.0,0.0,0.0]
 				grad_phi[0] = 0.5*(get_phi(xc+dxc, yc, zc)-get_phi(xc-dxc, yc, zc))
 				grad_phi[1] = 0.5*(get_phi(xc, yc+dyc, zc)-get_phi(xc, yc-dyc, zc))
 				grad_phi[2] = 0.5*(get_phi(xc, yc, zc+dzc)-get_phi(xc, yc, zc-dzc))
 				vol = vol + estimate_C(phi,grad_phi)/(n*n*n)
+
 	return vol

@@ -1,4 +1,3 @@
-import taichi as ti
 from vof_data import *
 
 @ti.kernel

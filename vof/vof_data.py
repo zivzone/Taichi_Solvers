@@ -6,27 +6,28 @@ import taichi as ti
 ti.cfg.arch = ti.cuda
 
 # grid parameters
-n_x = 512
-n_y = 512
-n_z = 512
+n_x = 256
+n_y = 256
+n_z = 4
 
 w_x = 1.0
 w_y = 1.0
-w_z = 1.0
+w_z = .01
 
-n_ghost = 4
+n_ghost = 1
 block_size = 4
-n_init_subcells = 1
+n_init_subcells = 1 # only works with 1 for now
 
-init_phi = 0 # 0 = zalesaks disk, 1 = cylinder
+# initial phi params
+init_phi = 1 # 0 = zalesaks disk, 1 = cylinder
 init_center = [.5, .5 , .5]
 init_width = .05
 init_height = .12
 init_radius = .125
 
+# some other constants
 Czero = 1.0e-6
 Cone = 1.0-Czero
-print(Cone)
 
 dx = w_x/n_x
 dy = w_y/n_y
