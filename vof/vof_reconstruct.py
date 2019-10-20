@@ -3,7 +3,7 @@ from vof_data import *
 @ti.kernel
 def reconstruct_plic():
 	for i,j,k in C:
-		if Flags[i,j,k]&cellFlags.CELL_INTERFACE==cellFlags.CELL_INTERFACE:
+		if Flags[i,j,k]&cell_flags.CELL_INTERFACE==cell_flags.CELL_INTERFACE:
 			if (i>0 and j>0 and k>0 and i<n_x-1 and j<n_y-1 and k<n_z-1):
 				mx,my,mz,alpha = recon(i,j,k)
 				M[i,j,k][0] = mx
@@ -13,51 +13,50 @@ def reconstruct_plic():
 
 @ti.func
 def calc_C(alpha, m):
-  # should store the following for speedup
-  # convert normal vector into Zaleski's m vector
 	c = 0.0
-	if (alpha < 0.0):
+	if alpha < 0.0:
 		c = 0.0
-	elif (alpha > ti.abs(m[0])+ti.abs(m[1])+ti.abs(m[2])):
+	elif (alpha > (ti.abs(m[0])+ti.abs(m[1])+ti.abs(m[2]))):
 		c = 1.0
-
-	a = ti.min(alpha, ti.abs(m[0]) + ti.abs(m[1])+ ti.abs(m[2]) - alpha)
-	mx = ti.abs(m[0])
-	my = ti.abs(m[1])
-	mz = ti.abs(m[2])
-
-	# the coefficients of the normal must be ordered as: m1 < m2 < m3
-	m1 = ti.min(mx,my)
-	m3 = ti.max(ti.max(mx,my),1.0e-15)
-	m2 = mz
-	if (m2 < m1):
-		tmp = m1
-		m1 = m2
-		m2 = tmp
-	elif (m2 > m3):
-		tmp = m3
-		m3 = m2
-		m2 = tmp
-
-	m12 = m1 + m2
-	mm  = ti.min(m12,m3)
-	pr  = ti.max(6.0*m1*m2*m3,1.0e-50)
-	V1  = m1*m1*m1/pr
-
-	if (a <  m1):
-		c = a*a*a/pr
-	elif (a < m2):
-		c = 0.5*a*(a-m1)/(m2*m3)+V1
-	elif (a < mm):
-		c = (a*a*(3.0*m12-a)+m1*m1*(m1-3.0*a)+m2*m2*(m2-3.0*a))/pr
-	elif (m12 <= m3):
-		c = (a-0.5*m12)/m3
 	else:
-		c = (a*a*(3.0*(m1+m2+m3)-2.0*a) + m1*m1*(m1-3.0*a) + \
-		m2*m2*(m2-3.0*a) + m3*m3*(m3-3.0*a))/pr
+		# convert normal vector into Zaleski's m vector
+		a = ti.min(alpha, ti.abs(m[0]) + ti.abs(m[1])+ ti.abs(m[2]) - alpha)
+		mx = ti.abs(m[0])
+		my = ti.abs(m[1])
+		mz = ti.abs(m[2])
 
-	if (alpha > 0.5*ti.abs(m[0])+ti.abs(m[1])+ti.abs(m[2])):
-		c = 1.0-c
+		# the coefficients of the normal must be ordered as: m1 < m2 < m3
+		m1 = ti.min(mx,my)
+		m3 = ti.max(ti.max(mx,my),1.0e-6)
+		m2 = mz*1.0
+		if (m2 < m1):
+			tmp = m1*1.0
+			m1 = m2*1.0
+			m2 = tmp*1.0
+		elif (m2 > m3):
+			tmp = m3*1.0
+			m3 = m2*1.0
+			m2 = tmp*1.0
+
+		m12 = m1 + m2
+		mm  = ti.min(m12,m3)
+		pr  = ti.max(6.0*m1*m2*m3,1.0e-7)
+		V1  = m1*m1*m1/pr
+
+		if (a <  m1):
+			c = a*a*a/pr
+		elif (a < m2):
+			c = 0.5*a*(a-m1)/(m2*m3)+V1
+		elif (a < mm):
+			c = (a*a*(3.0*m12-a)+m1*m1*(m1-3.0*a)+m2*m2*(m2-3.0*a))/pr
+		elif (m12 <= m3):
+			c = (a-0.5*m12)/m3
+		else:
+			c = (a*a*(3.0*(m1+m2+m3)-2.0*a) + m1*m1*(m1-3.0*a) + \
+			m2*m2*(m2-3.0*a) + m3*m3*(m3-3.0*a))/pr
+
+		if (alpha > 0.5*(ti.abs(m[0])+ti.abs(m[1])+ti.abs(m[2]))):
+			c = 1.0-c
 
 	return c
 
@@ -68,35 +67,37 @@ def calc_lsq_vof_error(alpha, m, i, j, k):
 		for dj in range(-1,2):
 			for di in range(-1,2):
 				a = alpha - (m[0]*di + m[1]*dj + m[2]*dk)
-				error = error + (C[i+di,j+dj,k+dk] - calc_C(a,m))
+				err = ti.abs(C[i+di,j+dj,k+dk] - calc_C(a,m))
+				error = error + err
 	return error
 
 
 @ti.func
 def my_cbrt(n):
+	# my own cube root function using bisection method
 	iter = 0
 	root = 1.0
-	if n>1:
+	if n>1.0:
 		a = 0.0
-		b = n
+		b = n*1.0
 		root = (a+b)/2.0
-		while (root*root*root-n >1e-8 or iter < 100):
+		while (root*root*root-n >1e-6 or iter < 1000):
 			root = (a+b)/2.0
 			if root*root*root<n:
-				a = root
+				a = root*1.0
 			else:
-				b = root
+				b = root*1.0
 			iter = iter + 1
-	elif n<1:
+	elif n<1.0:
 		a = 1.0
-		b = n
+		b = n*1.0
 		root = (a+b)/2.0
-		while (root*root*root-n >1e-8 or iter < 100):
+		while (root*root*root-n >1e-6 or iter < 1000):
 			root = (a+b)/2.0
 			if root*root*root>n:
-				a = root
+				a = root*1.0
 			else:
-				b = root
+				b = root*1.0
 			iter = iter + 1
 
 	return root
@@ -124,29 +125,29 @@ def calc_alpha(c, m):
 
 		# the coefficients of the normal must be ordered as: m1 < m2 < m3
 		m1 = ti.min(mx,my)
-		m3 = ti.max(ti.max(mx,my),1.0e-15)
-		m2 = mz
+		m3 = ti.max(ti.max(mx,my),1.0e-7)
+		m2 = mz*1.0
 		if (m2 < m1):
-			tmp = m1
-			m1 = m2
-			m2 = tmp
+			tmp = m1*1.0
+			m1 = m2*1.0
+			m2 = tmp*1.0
 		elif (m2 > m3):
-			tmp = m3
-			m3 = m2
-			m2 = tmp
+			tmp = m3*1.0
+			m3 = m2*1.0
+			m2 = tmp*1.0
 
 		# get ranges: V1<V2<v3;
 		m12 = m1 + m2
-		pr  = ti.max(6.0*m1*m2*m3,1.0e-20)
+		pr  = ti.max(6.0*m1*m2*m3,1.0e-8)
 		V1  = m1*m1*m1/pr
 		V2  = V1 + 0.5*(m2-m1)/m3
 		V3  = 0.0
 		mm = 0.0
 		if (m3 < m12):
-			mm = m3
+			mm = m3*1.0
 			V3 = ( m3*m3*(3.0*m12-m3) + m1*m1*(m1-3.0*m3) + m2*m2*(m2-3.0*m3) )/pr
 		else:
-			mm = m12
+			mm = m12*1.0
 			V3 = 0.5*mm/m3
 
 		# limit ch (0.d0 < ch < 0.5d0);
@@ -183,7 +184,7 @@ def calc_alpha(c, m):
 @ti.func
 def ELVIRA(i, j, k):
 	# reconstruct planar interface using ELVIRA
-	# check all possible normal vectors using forward and backward differrences
+	# check all possible normal vectors using forward, central, and backward differrences
 	h = [[0.0,0.0,0.0],[0.0,0.0,0.0],[0.0,0.0,0.0]]
 	hx = [0.0, 0.0, 0.0]
 	hy = [0.0, 0.0, 0.0]
@@ -192,7 +193,7 @@ def ELVIRA(i, j, k):
 	m = [0.0,0.0,0.0]
 	alpha = 0.0
 
-	errorMin = 1.0e8
+	errorMin = 1.0e20
 
 	# x-heights
 	for dk in ti.static(range(-1,2)):
@@ -208,17 +209,17 @@ def ELVIRA(i, j, k):
 	hz[1] = (h[1][2] - h[1][0])*.5
 	hz[2] = (h[1][2] - h[1][1])
 
-	# loop over all possible difference
+	# loop over all possible differences
 	for kk in ti.static(range(3)):
 		for jj in ti.static(range(3)):
 			n[1] = hy[jj]
 			n[2] = hz[kk]
 			n[0] = 1.0
-			if (C[i+1,j,k] - C[i-1,j,k] < 0.0):
+			if ((C[i+1,j,k] - C[i-1,j,k]) < 0.0):
 				n[0] = -1.0
 
 			# make sum of components = 1 for PLIC reconstruction and reconstruct
-			rdenom = 1.0/(ti.max(ti.abs(n[0]) + ti.abs(n[1]) + ti.abs(n[2]) , 1.0e-8))
+			rdenom = 1.0/(ti.abs(n[0]) + ti.abs(n[1]) + ti.abs(n[2]))
 			n[0] = -n[0]*rdenom
 			n[1] = -n[1]*rdenom
 			n[2] = -n[2]*rdenom
@@ -226,8 +227,8 @@ def ELVIRA(i, j, k):
 			error = calc_lsq_vof_error(alp,n,i,j,k)
 
 			if (error < errorMin):
-				errorMin = error
-				alpha = alp
+				errorMin = error*1.0
+				alpha = alp*1.0
 				m[0] = n[0]
 				m[1] = n[1]
 				m[2] = n[2]
@@ -237,7 +238,7 @@ def ELVIRA(i, j, k):
 		for di in ti.static(range(-1,2)):
 			h[di+1][dk+1] = C[i+di,j-1,k+dk] + C[i+di,j,k+dk] + C[i+di,j+1,k+dk]
 
-	# forward, central, backward difference
+	# forward, central, backward differences
 	hx[0] = (h[1][1] - h[0][1])
 	hx[1] = (h[2][1] - h[0][1])*.5
 	hx[2] = (h[2][1] - h[1][1])
@@ -246,17 +247,17 @@ def ELVIRA(i, j, k):
 	hz[1] = (h[1][2] - h[1][0])*.5
 	hz[2] = (h[1][2] - h[1][1])
 
-	# loop over all possible difference
+	# loop over all possible differences
 	for kk in ti.static(range(3)):
 		for ii in ti.static(range(3)):
 			n[0] = hx[ii]
 			n[2] = hz[kk]
 			n[1] = 1.0
-			if (C[i+1,j,k] - C[i-1,j,k] < 0.0):
+			if ((C[i,j+1,k] - C[i,j-1,k]) < 0.0):
 				n[1] = -1.0
 
 			# make sum of components = 1 for PLIC reconstruction and reconstruct
-			rdenom = 1.0/(ti.max(ti.abs(n[0]) + ti.abs(n[1]) + ti.abs(n[2]) , 1.0e-8))
+			rdenom = 1.0/(ti.max(ti.abs(n[0]) + ti.abs(n[1]) + ti.abs(n[2]) , 1.0e-20))
 			n[0] = -n[0]*rdenom
 			n[1] = -n[1]*rdenom
 			n[2] = -n[2]*rdenom
@@ -264,8 +265,8 @@ def ELVIRA(i, j, k):
 			error = calc_lsq_vof_error(alp,n,i,j,k)
 
 			if (error < errorMin):
-				errorMin = error
-				alpha = alp
+				errorMin = error*1.0
+				alpha = alp*1.0
 				m[0] = n[0]
 				m[1] = n[1]
 				m[2] = n[2]
@@ -275,7 +276,7 @@ def ELVIRA(i, j, k):
 		for di in ti.static(range(-1,2)):
 			h[di+1][dj+1] = C[i+di,j+dj,k-1] + C[i+di,j+dj,k] + C[i+di,j+dj,k+1]
 
-	# forward, central, backward difference
+	# forward, central, backward differences
 	hx[0] = (h[1][1] - h[0][1])
 	hx[1] = (h[2][1] - h[0][1])*.5
 	hx[2] = (h[2][1] - h[1][1])
@@ -284,17 +285,17 @@ def ELVIRA(i, j, k):
 	hy[1] = (h[1][2] - h[1][0])*.5
 	hy[2] = (h[1][2] - h[1][1])
 
-	# loop over all possible difference
+	# loop over all possible differences
 	for jj in ti.static(range(3)):
 		for ii in ti.static(range(3)):
 			n[0] = hx[ii]
 			n[1] = hy[jj]
 			n[2] = 1.0
-			if (C[i+1,j,k] - C[i-1,j,k] < 0.0):
+			if ((C[i,j,k+1] - C[i,j,k-1]) < 0.0):
 				n[2] = -1.0
 
 			# make sum of components = 1 for PLIC reconstruction and reconstruct
-			rdenom = 1.0/(ti.max(ti.abs(n[0]) + ti.abs(n[1]) + ti.abs(n[2]) , 1.0e-8));
+			rdenom = 1.0/(ti.max(ti.abs(n[0]) + ti.abs(n[1]) + ti.abs(n[2]) , 1.0e-20));
 			n[0] = -n[0]*rdenom
 			n[1] = -n[1]*rdenom
 			n[2] = -n[2]*rdenom
@@ -302,8 +303,8 @@ def ELVIRA(i, j, k):
 			error = calc_lsq_vof_error(alp,n,i,j,k)
 
 			if (error < errorMin):
-				errorMin = error
-				alpha = alp
+				errorMin = error*1.0
+				alpha = alp*1.0
 				m[0] = n[0]
 				m[1] = n[1]
 				m[2] = n[2]
@@ -311,5 +312,5 @@ def ELVIRA(i, j, k):
 	return m[0], m[1], m[2], alpha
 
 
-# set the reconstrunction function
+# set the reconstruction function
 recon = ELVIRA

@@ -6,6 +6,7 @@ from vof_advect import *
 from vof_visualize import *
 
 def main():
+
 	initialize()
 
 	copy_to_temp()
@@ -16,9 +17,10 @@ def main():
 
 	reconstruct_plic()
 
-	write_Flags_png('Flags0.png')
-	write_C_png('C0.png')
-	write_M_png('M0.png')
+	write_Flags_png(0)
+	write_C_png(0)
+	write_M_png(0)
 
+	ti.profiler_print()
 if __name__ == '__main__':
   main()

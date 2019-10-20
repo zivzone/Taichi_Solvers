@@ -21,10 +21,10 @@ def initialize():
 								phi = get_phi(x,y,z)
 								if ti.abs(phi) < np.sqrt(dx*dx + dy*dy + dz*dz):
 									C[i,j,k] = init_C(x,y,z)
-									Flags[i,j,k] = cellFlags.CELL_ACTIVE
+									Flags[i,j,k] = cell_flags.CELL_ACTIVE
 								else:
 									C[i,j,k] = (1.0+phi/ti.abs(phi))/2.0
-									Flags[i,j,k] = cellFlags.CELL_GHOST
+									Flags[i,j,k] = cell_flags.CELL_GHOST
 
 
 @ti.func
@@ -69,11 +69,24 @@ def get_phi_cylinder(x,y,z):
 	+ (y-init_center[1])*(y-init_center[1]))
 	return phi
 
+@ti.func
+def get_phi_plane(x,y,z):
+	# set the initial level set distribution to a cylinder
+	len = np.sqrt(init_plane_dir[0]**2 + init_plane_dir[1]**2 + init_plane_dir[2]**2)
+	a = init_plane_dir[0]/len
+	b = init_plane_dir[1]/len
+	c = init_plane_dir[2]/len
+	d = -(init_center[0]*init_plane_dir[0] + init_center[1]*init_plane_dir[1] + init_center[2]*init_plane_dir[2])/len
+	phi = (a*x + b*y + c*z + d)/ti.sqrt(a*a + b*b + c*c)
+	return phi
+
 # set the get phi function
 if(init_phi == 0):
 	get_phi = get_phi_zalesaks_disk
-else:
+elif(init_phi == 1):
 	get_phi = get_phi_cylinder
+else:
+	get_phi = get_phi_plane
 
 @ti.func
 def get_block_loc(ib,jb,kb):
