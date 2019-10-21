@@ -70,6 +70,15 @@ def get_phi_cylinder(x,y,z):
 	return phi
 
 @ti.func
+def get_phi_sphere(x,y,z):
+	# set the initial level set distribution to a cylinder
+	phi = init_radius \
+	- ti.sqrt((x-init_center[0])*(x-init_center[0]) \
+	+ (y-init_center[1])*(y-init_center[1]) \
+	+ (z-init_center[2])*(z-init_center[2]))
+	return phi
+
+@ti.func
 def get_phi_plane(x,y,z):
 	# set the initial level set distribution to a cylinder
 	len = np.sqrt(init_plane_dir[0]**2 + init_plane_dir[1]**2 + init_plane_dir[2]**2)
@@ -85,6 +94,8 @@ if(init_phi == 0):
 	get_phi = get_phi_zalesaks_disk
 elif(init_phi == 1):
 	get_phi = get_phi_cylinder
+elif(init_phi == 2):
+	get_phi = get_phi_sphere
 else:
 	get_phi = get_phi_plane
 

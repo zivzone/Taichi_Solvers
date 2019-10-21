@@ -13,6 +13,8 @@ def Flags_to_img(img: np.ndarray):
 				img[i+ n_x*j] = 2.0/3.0
 			elif Flags[i,j,k]&cell_flags.CELL_GHOST==cell_flags.CELL_GHOST:
 				img[i+ n_x*j] = 1.0/3.0
+			else:
+				img[i+ n_x*j] = 0.0
 
 @ti.kernel
 def C_to_img(img: np.ndarray):

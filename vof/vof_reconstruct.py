@@ -2,7 +2,7 @@ from vof_data import *
 
 @ti.kernel
 def reconstruct_plic():
-	for i,j,k in C:
+	for i,j,k in Flags:
 		if Flags[i,j,k]&cell_flags.CELL_INTERFACE==cell_flags.CELL_INTERFACE:
 			if (i>0 and j>0 and k>0 and i<n_x-1 and j<n_y-1 and k<n_z-1):
 				mx,my,mz,alpha = recon(i,j,k)
@@ -81,7 +81,7 @@ def my_cbrt(n):
 		a = 0.0
 		b = n*1.0
 		root = (a+b)/2.0
-		while (root*root*root-n >1e-6 or iter < 1000):
+		while (root*root*root-n >1e-6 or iter < 100):
 			root = (a+b)/2.0
 			if root*root*root<n:
 				a = root*1.0
@@ -92,7 +92,7 @@ def my_cbrt(n):
 		a = 1.0
 		b = n*1.0
 		root = (a+b)/2.0
-		while (root*root*root-n >1e-6 or iter < 1000):
+		while (root*root*root-n >1e-6 or iter < 100):
 			root = (a+b)/2.0
 			if root*root*root>n:
 				a = root*1.0
@@ -186,9 +186,6 @@ def ELVIRA(i, j, k):
 	# reconstruct planar interface using ELVIRA
 	# check all possible normal vectors using forward, central, and backward differrences
 	h = [[0.0,0.0,0.0],[0.0,0.0,0.0],[0.0,0.0,0.0]]
-	hx = [0.0, 0.0, 0.0]
-	hy = [0.0, 0.0, 0.0]
-	hz = [0.0, 0.0, 0.0]
 	n = [0.0,0.0,0.0]
 	m = [0.0,0.0,0.0]
 	alpha = 0.0
@@ -201,19 +198,31 @@ def ELVIRA(i, j, k):
 			h[dj+1][dk+1] = C[i-1,j+dj,k+dk] + C[i,j+dj,k+dk] + C[i+1,j+dj,k+dk]
 
 	# forward, central, backward difference
-	hy[0] = (h[1][1] - h[0][1])
-	hy[1] = (h[2][1] - h[0][1])*.5
-	hy[2] = (h[2][1] - h[1][1])
+	hyb = (h[1][1] - h[0][1])
+	hyc = (h[2][1] - h[0][1])*.5
+	hyf = (h[2][1] - h[1][1])
 
-	hz[0] = (h[1][1] - h[1][0])
-	hz[1] = (h[1][2] - h[1][0])*.5
-	hz[2] = (h[1][2] - h[1][1])
+	hzb = (h[1][1] - h[1][0])
+	hzc = (h[1][2] - h[1][0])*.5
+	hzf = (h[1][2] - h[1][1])
 
 	# loop over all possible differences
-	for kk in ti.static(range(3)):
-		for jj in ti.static(range(3)):
-			n[1] = hy[jj]
-			n[2] = hz[kk]
+	for kk in range(3): # dont use ti.static(range()) so that loop doesnt unroll, this decreases compiile time
+		for jj in range(3):
+			if jj == 0:
+				n[1] = hyb
+			elif jj== 1:
+				n[1] = hyc
+			else:
+				n[1] = hyf
+
+			if kk == 0:
+				n[2] = hzb
+			elif kk== 1:
+				n[2] = hzc
+			else:
+				n[2] = hzf
+
 			n[0] = 1.0
 			if ((C[i+1,j,k] - C[i-1,j,k]) < 0.0):
 				n[0] = -1.0
@@ -239,19 +248,31 @@ def ELVIRA(i, j, k):
 			h[di+1][dk+1] = C[i+di,j-1,k+dk] + C[i+di,j,k+dk] + C[i+di,j+1,k+dk]
 
 	# forward, central, backward differences
-	hx[0] = (h[1][1] - h[0][1])
-	hx[1] = (h[2][1] - h[0][1])*.5
-	hx[2] = (h[2][1] - h[1][1])
+	hxb = (h[1][1] - h[0][1])
+	hxc = (h[2][1] - h[0][1])*.5
+	hxf = (h[2][1] - h[1][1])
 
-	hz[0] = (h[1][1] - h[1][0])
-	hz[1] = (h[1][2] - h[1][0])*.5
-	hz[2] = (h[1][2] - h[1][1])
+	hzb = (h[1][1] - h[1][0])
+	hzc = (h[1][2] - h[1][0])*.5
+	hzf = (h[1][2] - h[1][1])
 
 	# loop over all possible differences
-	for kk in ti.static(range(3)):
-		for ii in ti.static(range(3)):
-			n[0] = hx[ii]
-			n[2] = hz[kk]
+	for kk in range(3):
+		for ii in range(3):
+			if ii == 0:
+				n[0] = hxb
+			elif ii== 1:
+				n[0] = hxc
+			else:
+				n[0] = hxf
+
+			if kk == 0:
+				n[2] = hzb
+			elif kk==1:
+				n[2] = hzc
+			else:
+				n[2] = hzf
+
 			n[1] = 1.0
 			if ((C[i,j+1,k] - C[i,j-1,k]) < 0.0):
 				n[1] = -1.0
@@ -277,20 +298,31 @@ def ELVIRA(i, j, k):
 			h[di+1][dj+1] = C[i+di,j+dj,k-1] + C[i+di,j+dj,k] + C[i+di,j+dj,k+1]
 
 	# forward, central, backward differences
-	hx[0] = (h[1][1] - h[0][1])
-	hx[1] = (h[2][1] - h[0][1])*.5
-	hx[2] = (h[2][1] - h[1][1])
+	hxb = (h[1][1] - h[0][1])
+	hxc = (h[2][1] - h[0][1])*.5
+	hxf = (h[2][1] - h[1][1])
 
-	hy[0] = (h[1][1] - h[1][0])
-	hy[1] = (h[1][2] - h[1][0])*.5
-	hy[2] = (h[1][2] - h[1][1])
+	hyb = (h[1][1] - h[1][0])
+	hyc = (h[1][2] - h[1][0])*.5
+	hyf = (h[1][2] - h[1][1])
 
 	# loop over all possible differences
-	for jj in ti.static(range(3)):
-		for ii in ti.static(range(3)):
-			n[0] = hx[ii]
-			n[1] = hy[jj]
-			n[2] = 1.0
+	for jj in range(3):
+		for ii in range(3):
+			if ii == 0:
+				n[0] = hxb
+			elif ii== 1:
+				n[0] = hxc
+			else:
+				n[0] = hxf
+
+			if jj == 0:
+				n[1] = hyb
+			elif jj==1:
+				n[1] = hyc
+			else:
+				n[1] = hyf
+
 			if ((C[i,j,k+1] - C[i,j,k-1]) < 0.0):
 				n[2] = -1.0
 
