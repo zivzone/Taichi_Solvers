@@ -12,12 +12,6 @@ def copy_from_temp():
 		Flags[i,j,k] = Flags_temp[i,j,k]
 		C[i,j,k] = C_temp[i,j,k]
 
-def clear_and_deactivate_band():
-	Flags.ptr.snode().parent.parent.clear_data_and_deactivate()
-
-def clear_and_deactivate_band_temp():
-	Flags_temp.ptr.snode().parent.parent.clear_data_and_deactivate()
-
 @ti.kernel
 def grow_interface_band():
 	for i,j,k in Flags_temp:

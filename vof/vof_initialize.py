@@ -3,20 +3,20 @@ from vof_data import *
 @ti.kernel
 def initialize():
 	# loop over all blocks
-	for ib in range(n_x//block_size):
-		for jb in range(n_y//block_size):
-			for kb in range(n_z//block_size):
+	for ib in range(n_x//b_size):
+		for jb in range(n_y//b_size):
+			for kb in range(n_z//b_size):
 				x,y,z = get_block_loc(ib,jb,kb)
 				phi = get_phi(x,y,z)
-				if ti.abs(phi) < block_size*np.sqrt(dx*dx + dy*dy + dz*dz):
+				if ti.abs(phi) < b_size*np.sqrt(dx*dx + dy*dy + dz*dz):
 					# if the block is near interface
 					# loop over cells in block
-					for ic in range(block_size):
-						for jc in range(block_size):
-							for kc in range(block_size):
-								i = ic + ib*block_size
-								j = jc + jb*block_size
-								k = kc + kb*block_size
+					for ic in range(b_size):
+						for jc in range(b_size):
+							for kc in range(b_size):
+								i = ic + ib*b_size
+								j = jc + jb*b_size
+								k = kc + kb*b_size
 								x,y,z = get_cell_loc(i,j,k)
 								phi = get_phi(x,y,z)
 								if ti.abs(phi) < np.sqrt(dx*dx + dy*dy + dz*dz):
@@ -101,9 +101,9 @@ else:
 
 @ti.func
 def get_block_loc(ib,jb,kb):
-	x = ib*dx*block_size + dx*block_size/2.0 - n_ghost*dx
-	y = jb*dy*block_size + dy*block_size/2.0 - n_ghost*dy
-	z = kb*dz*block_size + dz*block_size/2.0 - n_ghost*dz
+	x = ib*dx*b_size + dx*b_size/2.0 - n_ghost*dx
+	y = jb*dy*b_size + dy*b_size/2.0 - n_ghost*dy
+	z = kb*dz*b_size + dz*b_size/2.0 - n_ghost*dz
 	return x,y,z
 
 @ti.func

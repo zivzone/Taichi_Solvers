@@ -6,24 +6,25 @@ import taichi as ti
 ti.cfg.arch = ti.cuda
 
 # grid parameters
-n_x = 1024
-n_y = 1024
-n_z = 1024
+n_x = 4096
+n_y = 4096
+n_z = 4096
 
 w_x = 1000
 w_y = 1000
 w_z = 1000
 
 n_ghost = 1
-block_size = 4
+b_size = 4
+sb_size = b_size*32
 n_init_subcells = 4
 
 # initial phi params
-init_phi = 0 # 0 = zalesaks disk, 1 = cylinder
-init_center = [510, 510 , 0]
+init_phi = 2 # 0 = zalesaks disk, 1 = cylinder
+init_center = [0, 0 , 0]
 init_width = .05
 init_height = .125
-init_radius = 250
+init_radius = 50
 init_plane_dir = [1.0, 0.0, 0.0]
 
 # some other constants
@@ -65,10 +66,18 @@ dC_temp = vector()
 
 @ti.layout
 def place():
-	block = ti.root.dense(ti.ijk, [n_x//block_size, n_y//block_size, n_z//block_size]).pointer()
+	super_block = ti.root.dense(ti.ijk, [n_x//sb_size, n_y//sb_size, n_z//sb_size]).pointer()
+	block = super_block.dense(ti.ijk, [sb_size//b_size, sb_size//b_size, sb_size//b_size]).pointer()
 	for f in [Flags, C, M, Alpha, U, U_vert, dC]:
-		block.dense(ti.ijk, block_size).place(f)
+		block.dense(ti.ijk, b_size).place(f)
 
-	block_temp = ti.root.dense(ti.ijk, [n_x//block_size, n_y//block_size, n_z//block_size]).pointer()
+	super_block_temp = ti.root.dense(ti.ijk, [n_x//sb_size, n_y//sb_size, n_z//sb_size]).pointer()
+	block_temp = super_block_temp.dense(ti.ijk, [sb_size//b_size, sb_size//b_size, sb_size//b_size]).pointer()
 	for f in [Flags_temp, C_temp, M_temp, Alpha_temp, U_temp, U_vert_temp, dC_temp]:
-		block_temp.dense(ti.ijk, block_size).place(f)
+		block_temp.dense(ti.ijk, b_size).place(f)
+
+def clear_data_and_deactivate():
+	Flags.ptr.snode().parent.parent.parent.clear_data_and_deactivate()
+
+def clear_data_and_deactivate_temp():
+	Flags_temp.ptr.snode().parent.parent.parent.clear_data_and_deactivate()
