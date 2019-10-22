@@ -15,7 +15,7 @@ def copy_from_temp():
 @ti.kernel
 def grow_interface_band():
 	for i,j,k in Flags_temp:
-		if (i>0 and j>0 and k>0):
+		if is_internal(i,j,k):
 			if Flags_temp[i,j,k]&cell_flags.CELL_ACTIVE==cell_flags.CELL_ACTIVE:
 				# check if this is and interface cell
 				if (C_temp[i,j,k] >= Czero and C_temp[i,j,k] <= Cone):
@@ -35,7 +35,7 @@ def grow_interface_band():
 @ti.kernel
 def grow_active_band():
 	for i,j,k in Flags:
-		if (i>0 and j>0 and k>0 and i<n_x-1 and j<n_y-1 and k<n_z-1):
+		if is_internal(i,j,k):
 			if Flags[i,j,k]&cell_flags.CELL_INTERFACE==cell_flags.CELL_INTERFACE:
 				# flag this cell and neighbors as active
 					for di in ti.static(range(-1,2)):
@@ -47,7 +47,7 @@ def grow_active_band():
 @ti.kernel
 def grow_ghost_band():
 	for i,j,k in Flags:
-		if (i>0 and j>0 and k>0 and i<n_x-1 and j<n_y-1 and k<n_z-1):
+		if is_internal(i,j,k):
 			if Flags[i,j,k]&cell_flags.CELL_ACTIVE==cell_flags.CELL_ACTIVE:
 				# flag neighbors as ghost if they arnt active
 					for di in ti.static(range(-1,2)):

@@ -4,7 +4,7 @@ from vof_data import *
 def reconstruct_plic():
 	for i,j,k in Flags:
 		if Flags[i,j,k]&cell_flags.CELL_INTERFACE==cell_flags.CELL_INTERFACE:
-			if (i>0 and j>0 and k>0 and i<n_x-1 and j<n_y-1 and k<n_z-1):
+			if is_internal(i,j,k):
 				mx,my,mz,alpha = recon(i,j,k)
 				M[i,j,k][0] = mx
 				M[i,j,k][1] = my

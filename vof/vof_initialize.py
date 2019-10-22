@@ -61,6 +61,7 @@ def get_phi_zalesaks_disk(x,y,z):
 
 	return phi
 
+## get_phi functions ##
 @ti.func
 def get_phi_cylinder(x,y,z):
 	# set the initial level set distribution to a cylinder
@@ -98,6 +99,7 @@ elif(init_phi == 2):
 	get_phi = get_phi_sphere
 else:
 	get_phi = get_phi_plane
+
 
 @ti.func
 def get_block_loc(ib,jb,kb):
