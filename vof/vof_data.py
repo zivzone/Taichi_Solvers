@@ -6,8 +6,8 @@ import taichi as ti
 ti.cfg.arch = ti.cuda
 
 # grid parameters
-n_x = 512
-n_y = 512
+n_x = 2048
+n_y = 2048
 n_z = 4
 
 w_x = 1000
@@ -20,11 +20,11 @@ sb_size = b_size*1
 n_init_subcells = 4
 
 # initial phi params
-init_phi = 2 # 0 = zalesaks disk, 1 = cylinder
-init_center = [0, 0 , 0]
-init_width = .05
-init_height = .125
-init_radius = 50
+init_phi = 0 # 0 = zalesaks disk, 1 = cylinder
+init_center = [500.0, 800.0 , 0.0]
+init_width = 25
+init_height = 150
+init_radius = 100.0
 init_plane_dir = [1.0, 0.0, 0.0]
 
 # some other constants
@@ -35,11 +35,12 @@ dx = w_x/n_x
 dy = w_y/n_y
 dz = w_z/n_z
 
-class cell_flags(IntFlag):
-	NONE = 0
-	CELL_ACTIVE = auto()
-	CELL_INTERFACE = auto()
-	CELL_GHOST = auto()
+class flag_enum(IntFlag):
+  NONE = 0
+  CELL_ACTIVE = auto()
+  CELL_INTERFACE = auto()
+  CELL_GHOST = auto()
+  FACE_ACTIVE = auto()
 
 # setup sparse simulation data arrays
 real = ti.f32
@@ -65,22 +66,39 @@ C_temp = scalar()
 
 @ti.layout
 def place():
-	super_block = ti.root.dense(ti.ijk, [n_x//sb_size, n_y//sb_size, n_z//sb_size]).pointer()
-	block = super_block.dense(ti.ijk, [sb_size//b_size, sb_size//b_size, sb_size//b_size]).pointer()
-	for f in [Flags, C, M, Alpha, U, V, W, Vel_vert, dCx, dCy, dCz]:
-		block.dense(ti.ijk, b_size).place(f)
+  super_block = ti.root.dense(ti.ijk, [n_x//sb_size, n_y//sb_size, n_z//sb_size]).pointer()
+  block = super_block.dense(ti.ijk, [sb_size//b_size, sb_size//b_size, sb_size//b_size]).pointer()
+  for f in [Flags, C, M, Alpha, U, V, W, Vel_vert, dCx, dCy, dCz]:
+    block.dense(ti.ijk, b_size).place(f)
 
-	super_block = ti.root.dense(ti.ijk, [n_x//sb_size, n_y//sb_size, n_z//sb_size]).pointer()
-	block = super_block.dense(ti.ijk, [sb_size//b_size, sb_size//b_size, sb_size//b_size]).pointer()
-	for f in [Flags_temp, C_temp]:
-		block.dense(ti.ijk, b_size).place(f)
+  super_block = ti.root.dense(ti.ijk, [n_x//sb_size, n_y//sb_size, n_z//sb_size]).pointer()
+  block = super_block.dense(ti.ijk, [sb_size//b_size, sb_size//b_size, sb_size//b_size]).pointer()
+  for f in [Flags_temp, C_temp]:
+    block.dense(ti.ijk, b_size).place(f)
 
 def clear_data_and_deactivate():
-	Flags.ptr.snode().parent.parent.parent.clear_data_and_deactivate()
+  Flags.ptr.snode().parent.parent.clear_data_and_deactivate()
 
 def clear_data_and_deactivate_temp():
-	Flags_temp.ptr.snode().parent.parent.parent.clear_data_and_deactivate()
+  Flags_temp.ptr.snode().parent.parent.clear_data_and_deactivate()
 
 @ti.func
-def is_internal(i,j,k):
-	return (i>n_ghost-1 and j>n_ghost-1 and k>n_ghost-1 and i<n_x-n_ghost and j<n_y-n_ghost and k<n_z-n_ghost)
+def is_internal_cell(i,j,k):
+  # there is nghost ghost cell on left and nhost+1 ghost cells. this all allows there to be ghost faces
+  return (i>n_ghost-1 and j>n_ghost-1 and k>n_ghost-1 and i<n_x-n_ghost-1 and j<n_y-n_ghost-1 and k<n_z-n_ghost-1)
+
+@ti.func
+def is_interface_cell(i,j,k):
+  return Flags[i,j,k]&flag_enum.CELL_INTERFACE==flag_enum.CELL_INTERFACE
+
+@ti.func
+def is_active_cell(i,j,k):
+  return Flags[i,j,k]&flag_enum.CELL_ACTIVE==flag_enum.CELL_ACTIVE
+
+@ti.func
+def is_ghost_cell(i,j,k):
+  return Flags[i,j,k]&flag_enum.CELL_GHOST==flag_enum.CELL_GHOST
+
+@ti.func
+def is_active_face(i,j,k):
+  return Flags[i,j,k]&flag_enum.FACE_ACTIVE==flag_enum.FACE_ACTIVE
