@@ -3,9 +3,9 @@ from vof_data import *
 @ti.kernel
 def initialize():
   # loop over all blocks
-  for ib in range(n_x//b_size):
-    for jb in range(n_y//b_size):
-      for kb in range(n_z//b_size):
+  for ib in range(nx_ghost//b_size,(nx+nx_ghost)//b_size):
+    for jb in range(ny_ghost//b_size,(ny+ny_ghost)//b_size):
+      for kb in range(nz_ghost//b_size,(nz+nz_ghost)//b_size):
         x,y,z = get_block_loc(ib,jb,kb)
         phi = get_phi(x,y,z)
         if ti.abs(phi) < b_size*np.sqrt(dx*dx + dy*dy + dz*dz):
@@ -103,22 +103,6 @@ elif(init_phi == 2):
   get_phi = get_phi_sphere
 else:
   get_phi = get_phi_plane
-
-
-@ti.func
-def get_block_loc(ib,jb,kb):
-  x = ib*dx*b_size + dx*b_size/2.0 - n_ghost*dx
-  y = jb*dy*b_size + dy*b_size/2.0 - n_ghost*dy
-  z = kb*dz*b_size + dz*b_size/2.0 - n_ghost*dz
-  return x,y,z
-
-
-@ti.func
-def get_cell_loc(i,j,k):
-  x = i*dx + dx/2.0 - n_ghost*dx
-  y = j*dy + dy/2.0 - n_ghost*dy
-  z = k*dz + dz/2.0 - n_ghost*dz
-  return x,y,z
 
 
 @ti.func

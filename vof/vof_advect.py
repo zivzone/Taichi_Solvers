@@ -1,17 +1,20 @@
 from vof_data import *
-
+from vof_common import *
+"""
 @ti.kernel
-def compute_dC():
+def compute_DC():
+  # compute volume fraction fluxes using isoadvector-like algorithm
   for i,j,k in Flags:
-    if Flags[i,j,k]&flag_enum.CELL_ACTIVE==flag_enum.CELL_ACTIVE:
-      if is_internal_cell(i,j,k):
-        # flux the left face
-        #**********************************************************************
-        # find the "upwind" interface cell
-        iup,jup,kup = get_upwind_x(i,j,k)
-        dCx[i,j,k] = C[iup,jup,kup]
-        if is_interface(iup,jup,kup):
-          phi = [[0.0,0.0],[0.0,0.0],[0.0,0.0]]
+    # flux the left face
+    if is_internal_face(i,j,k) and is_active_x_face(i,j,k):
+      # find the "upwind" interface cell
+      iup,jup,kup = get_upwind_x(i,j,k)
+
+      # intialize DCx to upwind volume fraction
+      DCx[i,j,k] = C[iup,jup,kup]
+      if is_interface(iup,jup,kup):
+        # compute the "time integral of submerged face area"
+        phi = [[0.0,0.0],[0.0,0.0],[0.0,0.0]] # (x,y,t)
 
 
 @ti.kernel
@@ -23,21 +26,6 @@ def interp_face_velocity_to_vertex():
       Vel_vert[i,j,k][1] = (V[i,j,k] + V[i,j-1,k])/2.0
       Vel_vert[i,j,k][2] = (W[i,j,k] + W[i,j,k-1])/2.0
 
-
-@ti.kernel
-def set_face_velocity():
-  # set left/bottom/back face velocities from preset field
-  for i,j,k in Flags:
-    x,y,z = get_cell_loc(i,j,k)
-
-    u,v,w = get_vel(x-dx/2.0,y,z) # at face loc
-    U[i,j,k] = u
-
-    u,v,w = get_vel(x,y-dy/2.0,z) # at face loc
-    V[i,j,k] = v
-
-    u,v,w = get_vel(x,y,z-dz/2.0) # at face loc
-    W[i,j,k] = w
 
 @ti.func
 def get_upwind_x(i,j,k):
@@ -62,28 +50,17 @@ def get_upwind_x(i,j,k):
           kup = k+dk
           umax = sgn*U[iup,j+dj,k+dk]
 
-## get_velocity functions ##
-@ti.func
-def get_vel_solid_body_rotation(x,y,z):
-  u = 0.5 - y/w_y
-  v = -0.5 + x/w_x
-  w = 0.0
-  return u,v,w
+  return iup,jup,kup
 
 @ti.func
-def get_vel_vortex_in_a_box(x,y,z):
-  xpi = np.pi*x/w_x
-  ypi = np.pi*y/w_x
-  u = -2.0*ti.sin(xpi)*ti.sin(xpi)*ti.sin(ypi)*ti.cos(ypi)
-  v =  2.0*ti.sin(ypi)*ti.sin(ypi)*ti.sin(xpi)*ti.cos(xpi)
-  w =  0.0
-  return u,v,w
+def get_phi_from_plic(x,y,z,i,j,k):
+  # loc relative to interface cell origin
+  x0,y0,z0 = get_vert_loc(i,j,k)
+  x = x-x0
+  y = y-y0
+  z = z-z0
 
-@ti.func
-def get_vel_transport(x,y,z):
-  u =  1.0
-  v =  0.0
-  w =  0.0
-  return u,v,w
-
-get_vel = get_vel_transport
+  # phi is distance form plic plane
+  phi = (M[i,j,k][0]*x + M[i,j,k][1]*y + M[i,j,k][2]*z - Alpha[i,j,k])/np.sqrt(3.0)
+  return phi
+"""
