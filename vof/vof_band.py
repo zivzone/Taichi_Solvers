@@ -1,21 +1,22 @@
 from vof_data import *
+from vof_common import *
 
 @ti.kernel
 def copy_to_temp():
   for i,j,k in Flags:
-    Flags_temp[i,j,k] = Flags[i,j,k]
     C_temp[i,j,k] = C[i,j,k]
+    Flags_temp[i,j,k] = Flags[i,j,k]
 
 @ti.kernel
 def copy_from_temp():
   for i,j,k in Flags_temp:
-    Flags[i,j,k] = Flags_temp[i,j,k]
     C[i,j,k] = C_temp[i,j,k]
+    Flags[i,j,k] = Flags_temp[i,j,k]
 
 @ti.kernel
 def grow_interface_band():
   for i,j,k in Flags_temp:
-    if is_internal_cell(i,j,k) and Flags_temp[i,j,k]&flag_enum.CELL_ACTIVE==flag_enum.CELL_ACTIVE: #use Flags_temp
+    if is_internal_cell(i,j,k) and (Flags_temp[i,j,k]&flag_enum.CELL_ACTIVE)==flag_enum.CELL_ACTIVE: #use Flags_temp
       # check if this is and interface cell
       if (C_temp[i,j,k] >= Czero and C_temp[i,j,k] <= Cone):
         Flags[i,j,k] = flag_enum.CELL_INTERFACE

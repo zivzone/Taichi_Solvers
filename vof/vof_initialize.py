@@ -1,31 +1,28 @@
 from vof_data import *
+from vof_common import *
 
 @ti.kernel
-def initialize():
+def init_blocks():
   # loop over all blocks
-  for ib in range(nx_ghost//b_size,(nx+nx_ghost)//b_size):
-    for jb in range(ny_ghost//b_size,(ny+ny_ghost)//b_size):
-      for kb in range(nz_ghost//b_size,(nz+nz_ghost)//b_size):
+  for kb in range(nz_tot):
+    for jb in range(ny_tot):
+      for ib in range(nx_tot):
         x,y,z = get_block_loc(ib,jb,kb)
         phi = get_phi(x,y,z)
         if ti.abs(phi) < b_size*np.sqrt(dx*dx + dy*dy + dz*dz):
-          # if the block is near interface
-          # loop over cells in block
-          for ic in range(b_size):
-            for jc in range(b_size):
-              for kc in range(b_size):
-                i = ic + ib*b_size
-                j = jc + jb*b_size
-                k = kc + kb*b_size
-                x,y,z = get_cell_loc(i,j,k)
-                phi = get_phi(x,y,z)
-                if ti.abs(phi) < np.sqrt(dx*dx + dy*dy + dz*dz):
-                  C[i,j,k] = init_C(x,y,z)
-                  Flags[i,j,k] = flag_enum.CELL_ACTIVE
-                else:
-                  C[i,j,k] = (1.0+phi/ti.abs(phi))/2.0
-                  Flags[i,j,k] = flag_enum.CELL_GHOST
+          Flags[ib*b_size,jb*b_size,kb*b_size] = 0;
 
+@ti.kernel
+def init_cells():
+  for i,j,k in Flags:
+    xc,yc,zc = get_cell_loc(i,j,k)
+    phi = get_phi(xc,yc,zc)
+    if ti.abs(phi) <= np.sqrt(dx*dx + dy*dy + dz*dz):
+      C[i,j,k] = init_C(xc,yc,zc)
+      Flags[i,j,k] = flag_enum.CELL_ACTIVE
+    else:
+      C[i,j,k] = (1.0+phi/abs(phi))/2.0
+      Flags[i,j,k] = flag_enum.CELL_GHOST
 
 @ti.func
 def get_phi_zalesaks_disk(x,y,z):
@@ -62,7 +59,6 @@ def get_phi_zalesaks_disk(x,y,z):
   return phi
 
 
-## get_phi functions ##
 @ti.func
 def get_phi_cylinder(x,y,z):
   # set the initial level set distribution to a cylinder
@@ -166,3 +162,7 @@ def init_C(x,y,z):
         vol = vol + estimate_C(phi,grad_phi)/(n*n*n)
 
   return vol
+
+def initialize():
+  init_blocks()
+  init_cells()

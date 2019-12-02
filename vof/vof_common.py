@@ -1,3 +1,4 @@
+from enum import IntFlag, auto
 from vof_data import *
 
 
@@ -61,11 +62,25 @@ def set_face_velocity():
     u,v,w = get_vel(x,y,z-dz/2.0) # at face loc
     W[i,j,k] = w
 
+@ti.kernel
+def clear_data():
+  for i,j,k in Flags:
+    Flags[i,j,k] = 0
+    C[i,j,k] = 0.0
+
+
+@ti.kernel
+def clear_data_temp():
+  for i,j,k in Flags_temp:
+    Flags_temp[i,j,k] = 0
+    C_temp[i,j,k] = 0.0
+
 def clear_data_and_deactivate():
   Flags.ptr.snode().parent.parent.clear_data_and_deactivate()
 
 def clear_data_and_deactivate_temp():
   Flags_temp.ptr.snode().parent.parent.clear_data_and_deactivate()
+
 
 @ti.func
 def is_internal_cell(i,j,k):
@@ -94,6 +109,15 @@ def is_internal_z_face(i,j,k):
 @ti.func
 def is_boundary_z_face(i,j,k):
   return (i>nx_ghost-1 and i<nx_tot-nx_ghost and j>ny_ghost-1 and j<ny_tot-ny_ghost and (k==nz_ghost and k==nz_tot-nz_ghost-1))
+
+class flag_enum(IntFlag):
+  NONE = 0
+  CELL_ACTIVE = auto()
+  CELL_INTERFACE = auto()
+  CELL_GHOST = auto()
+  X_FACE_ACTIVE = auto()
+  Y_FACE_ACTIVE = auto()
+  Z_FACE_ACTIVE = auto()
 
 @ti.func
 def is_interface_cell(i,j,k):
