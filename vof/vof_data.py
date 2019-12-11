@@ -1,8 +1,8 @@
 import numpy as np
 import taichi as ti
 
-#ti.cfg.arch = ti.x86_64
-ti.cfg.arch = ti.cuda
+ti.cfg.arch = ti.x86_64
+#ti.cfg.arch = ti.cuda
 
 # grid parameters
 # ******************************************************************************
@@ -10,12 +10,12 @@ ti.cfg.arch = ti.cuda
 # internel grid size
 nx = 512
 ny = 512
-nz = 4
+nz = 2
 
 # domain dimensions
 wx = 1000.0
 wy = 1000.0
-wz = 8.0
+wz = 4.0
 
 b_size = 4
 sb_size = b_size*4
@@ -56,7 +56,6 @@ matrix = lambda: ti.Matrix(3, 3, dt=real)
 
 Flags = iscalar()   # cell, face, vertex flags
 C = scalar()        # cell volume fraction
-"""
 M = vector()        # interface normal vector
 Alpha = scalar()    # interface offset
 U = scalar()        # x velocity on left face
@@ -67,19 +66,16 @@ Phi = scalar()      # level set at cell center
 DCx = scalar()      # delta volume fraction on left face
 DCy = scalar()      # delta volume fraction on bottom face
 DCz = scalar()      # delta volume fraction on back face
-"""
 
 Flags_temp = iscalar()
 C_temp = scalar()
 
 @ti.layout
 def data():
-  block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).bitmasked() \
-  .dense(ti.ijk, b_size).place(Flags, C)#, M, Alpha, U, V, W, Vel_vert, Phi, DCx, DCy, DCz)
-  #for f in [Flags, C, M, Alpha, U, V, W, Vel_vert, Phi, DCx, DCy, DCz]:
-  #  block.dense(ti.ijk, b_size).place(f)
+  block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).bitmasked()
+  for f in [Flags, C, M, Alpha, U, V, W, Vel_vert, Phi, DCx, DCy, DCz]:
+    block.dense(ti.ijk, b_size).place(f)
 
-  block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).bitmasked() \
-  .dense(ti.ijk, b_size).place(Flags_temp, C_temp)
-  #for f in [Flags_temp, C_temp]:
-  #  block.dense(ti.ijk, b_size).place(f)
+  block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).bitmasked()
+  for f in [Flags_temp, C_temp]:
+    block.dense(ti.ijk, b_size).place(f)

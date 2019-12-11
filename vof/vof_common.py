@@ -55,12 +55,14 @@ def set_face_velocity():
   # set left/bottom/back face velocities from preset field
   for i,j,k in Flags:
     x,y,z = get_cell_loc(i,j,k)
+
     u,v,w = get_vel(x-dx/2.0,y,z) # at face loc
     U[i,j,k] = u
     u,v,w = get_vel(x,y-dy/2.0,z) # at face loc
     V[i,j,k] = v
     u,v,w = get_vel(x,y,z-dz/2.0) # at face loc
     W[i,j,k] = w
+
 
 @ti.kernel
 def clear_data():
@@ -85,6 +87,10 @@ def clear_data_and_deactivate_temp():
 @ti.func
 def is_internal_cell(i,j,k):
   return (i>nx_ghost-1 and i<nx_tot-nx_ghost and j>ny_ghost-1 and j<ny_tot-ny_ghost and k>nz_ghost-1  and k<nz_tot-nz_ghost)
+
+@ti.func
+def is_internal_vertex(i,j,k):
+  return (i>nx_ghost-1 and i<nx_tot-nx_ghost+1 and j>ny_ghost-1 and j<ny_tot-ny_ghost+1 and k>nz_ghost-1  and k<nz_tot-nz_ghost+1)
 
 @ti.func
 def is_internal_x_face(i,j,k):

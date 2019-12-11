@@ -8,7 +8,7 @@ from vof_common import *
 @ti.func
 def subtract_ghost(i,j):
   return i-nx_ghost, j-ny_ghost
-  
+
 
 @ti.kernel
 def Flags_to_img(img: ti.ext_arr()):
@@ -23,7 +23,7 @@ def Flags_to_img(img: ti.ext_arr()):
         elif is_ghost_cell(i,j,k):
           img[ii,jj] = 1.0/3.0
         else:
-          img[ii,jj] = 0.0
+          img[ii,jj] = 1.0/9.0
 
 
 @ti.kernel
@@ -47,7 +47,7 @@ def M_to_img(img1: ti.ext_arr(), img2: ti.ext_arr(), img3: ti.ext_arr()):
 
 
 def write_Flags_png(n):
-  img = np.zeros((nx,ny),dtype=np.float32)+.1
+  img = np.zeros((nx,ny),dtype=np.float32)
   Flags_to_img(img)
   img = np.transpose(img)
   img = np.flipud(img)

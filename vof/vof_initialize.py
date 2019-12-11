@@ -4,9 +4,9 @@ from vof_common import *
 @ti.kernel
 def init_blocks():
   # loop over all blocks
-  for kb in range(nz_tot):
-    for jb in range(ny_tot):
-      for ib in range(nx_tot):
+  for kb in range(nz_tot//b_size):
+    for jb in range(ny_tot//b_size):
+      for ib in range(nx_tot//b_size):
         x,y,z = get_block_loc(ib,jb,kb)
         phi = get_phi(x,y,z)
         if ti.abs(phi) < b_size*np.sqrt(dx*dx + dy*dy + dz*dz):
@@ -15,10 +15,10 @@ def init_blocks():
 @ti.kernel
 def init_cells():
   for i,j,k in Flags:
-    xc,yc,zc = get_cell_loc(i,j,k)
-    phi = get_phi(xc,yc,zc)
+    x,y,z = get_cell_loc(i,j,k)
+    phi = get_phi(x,y,z)
     if ti.abs(phi) <= np.sqrt(dx*dx + dy*dy + dz*dz):
-      C[i,j,k] = init_C(xc,yc,zc)
+      C[i,j,k] = init_C(x,y,z)
       Flags[i,j,k] = flag_enum.CELL_ACTIVE
     else:
       C[i,j,k] = (1.0+phi/abs(phi))/2.0
