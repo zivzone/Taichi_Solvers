@@ -127,15 +127,15 @@ def calc_alpha(c, m):
     # the coefficients of the normal must be ordered as: m1 < m2 < m3
     m1 = ti.min(mx,my)
     m3 = ti.max(ti.max(mx,my),1.0e-7)
-    m2 = mz*1.0
+    m2 = mz
     if (m2 < m1):
-      tmp = m1*1.0
-      m1 = m2*1.0
-      m2 = tmp*1.0
+      tmp = m1
+      m1 = m2
+      m2 = tmp
     elif (m2 > m3):
-      tmp = m3*1.0
-      m3 = m2*1.0
-      m2 = tmp*1.0
+      tmp = m3
+      m3 = m2
+      m2 = tmp
 
     # get ranges: V1<V2<v3;
     m12 = m1 + m2
@@ -145,10 +145,10 @@ def calc_alpha(c, m):
     V3  = 0.0
     mm = 0.0
     if (m3 < m12):
-      mm = m3*1.0
+      mm = m3
       V3 = ( m3*m3*(3.0*m12-m3) + m1*m1*(m1-3.0*m3) + m2*m2*(m2-3.0*m3) )/pr
     else:
-      mm = m12*1.0
+      mm = m12
       V3 = 0.5*mm/m3
 
     # limit ch (0.d0 < ch < 0.5d0);

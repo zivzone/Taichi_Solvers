@@ -32,6 +32,8 @@ init_plane_dir = [1.0, 0.0, 0.0]
 # some other constants
 Czero = 1.0e-6
 Cone = 1.0-Czero
+small = 1.0e-6
+big  = 1.0e6
 
 nx_ghost = nx//2 # number of ghost cells set so that that total grid size is still power of 2
 ny_ghost = ny//2
@@ -62,6 +64,7 @@ U = scalar()        # x velocity on left face
 V = scalar()        # y velocity on bottom face
 W = scalar()        # z velocity on back face
 Vel_vert = vector() # velocity vector on left/bottom/back vertex
+Vert_pos = vector() # position vector of DMC backtracked vertex
 Phi = scalar()      # level set at cell center
 DCx = scalar()      # delta volume fraction on left face
 DCy = scalar()      # delta volume fraction on bottom face
@@ -73,7 +76,7 @@ C_temp = scalar()
 @ti.layout
 def data():
   block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).bitmasked()
-  for f in [Flags, C, M, Alpha, U, V, W, Vel_vert, Phi, DCx, DCy, DCz]:
+  for f in [Flags, C, M, Alpha, U, V, W, Vel_vert, Vert_pos, Phi, DCx, DCy, DCz]:
     block.dense(ti.ijk, b_size).place(f)
 
   block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).bitmasked()
