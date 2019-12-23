@@ -8,7 +8,7 @@ from vof_visualize import *
 def main():
   initialize()
 
-  for i in range(1000):
+  for i in range(100):
     # update the narrow band
     copy_to_temp()
     clear_data()
@@ -21,10 +21,11 @@ def main():
     reconstruct_plic()
 
     # advect the volume fraction
-    #set_face_velocity()
-    #interp_face_velocity_to_vertex()
-    #compute_dmc_velocity(.01)
-    #compute_DC(.01)
+    set_face_velocity()
+    interp_face_velocity_to_vertex()
+    Dt[None] = .01
+    back_track_DMC()
+    compute_DC()
 
     if i%10 ==0:
       print(i)

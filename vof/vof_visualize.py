@@ -6,16 +6,16 @@ from vof_common import *
 
 
 @ti.func
-def subtract_ghost(i,j):
-  return i-nx_ghost, j-ny_ghost
+def subtract_ext(i,j):
+  return i-nx_ext, j-ny_ext
 
 
 @ti.kernel
 def Flags_to_img(img: ti.ext_arr()):
   for i,j,k in Flags:
     if is_internal_cell(i,j,k):
-      if k == nz_ghost+1:
-        ii,jj = subtract_ghost(i,j)
+      if k == nz_ext+1:
+        ii,jj = subtract_ext(i,j)
         if is_interface_cell(i,j,k):
           img[ii,jj] = 1.0
         elif is_active_cell(i,j,k):
@@ -30,8 +30,8 @@ def Flags_to_img(img: ti.ext_arr()):
 def C_to_img(img: ti.ext_arr()):
   for i,j,k in Flags:
     if is_internal_cell(i,j,k):
-      ii,jj = subtract_ghost(i,j)
-      if k == nz_ghost+1:
+      ii,jj = subtract_ext(i,j)
+      if k == nz_ext+1:
         img[ii,jj] = ti.cast(C[i,j,k],ti.f32)
 
 
@@ -39,8 +39,8 @@ def C_to_img(img: ti.ext_arr()):
 def M_to_img(img1: ti.ext_arr(), img2: ti.ext_arr(), img3: ti.ext_arr()):
   for i,j,k in Flags:
     if is_internal_cell(i,j,k):
-      ii,jj = subtract_ghost(i,j)
-      if k == nz_ghost+1:
+      ii,jj = subtract_ext(i,j)
+      if k == nz_ext+1:
         img1[ii,jj] = ti.abs(ti.cast(M[i,j,k][0],ti.f32))
         img2[ii,jj] = ti.abs(ti.cast(M[i,j,k][1],ti.f32))
         img3[ii,jj] = ti.abs(ti.cast(M[i,j,k][2],ti.f32))

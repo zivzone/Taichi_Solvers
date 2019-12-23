@@ -10,9 +10,9 @@ ti.cfg.arch = ti.cuda
 # ******************************************************************************
 
 # internel grid size
-nx = 128
-ny = 128
-nz = 2
+nx = 512
+ny = 512
+nz = 4
 
 # domain dimensions
 wx = 1.0
@@ -37,9 +37,11 @@ Cone = 1.0-Czero
 small = 1.0e-6
 big  = 1.0e10
 
-nx_ghost = nx//2 # number of ghost cells set so that that total grid size is still power of 2
-ny_ghost = ny//2
-nz_ghost = nz//2
+n_ghost = 1
+
+nx_ext = nx//2 # number of cells exterior to domain. includes ghost cells
+ny_ext = ny//2
+nz_ext = nz//2
 
 nx_tot = 2*nx;
 ny_tot = 2*ny;
@@ -48,8 +50,6 @@ nz_tot = 2*nz;
 dx = wx/nx
 dy = wy/ny
 dz = wz/nz
-
-print(nz_ghost)
 
 # setup sparse simulation data arrays
 # *****************************************************************************
@@ -72,6 +72,7 @@ Phi = scalar()      # level set at cell center
 DCx = scalar()      # delta volume fraction on left face
 DCy = scalar()      # delta volume fraction on bottom face
 DCz = scalar()      # delta volume fraction on back face
+Dt = scalar()       # delta t
 
 Flags_temp = iscalar()
 C_temp = scalar()
@@ -91,3 +92,5 @@ def data():
 
   ti.root.dense(ti.ijk, [nx_tot, ny_tot, nz_tot]) \
   .place(Flags_temp, C_temp)
+
+  ti.root.place(Dt)
