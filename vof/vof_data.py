@@ -10,8 +10,8 @@ ti.cfg.arch = ti.cuda
 # ******************************************************************************
 
 # internel grid size
-nx = 512
-ny = 512
+nx = 1024
+ny = 1024
 nz = 4
 
 # domain dimensions
@@ -26,7 +26,7 @@ n_init_subcells = 4
 # initial phi params
 init_phi = 0 # 0 = zalesaks disk, 1 = cylinder
 init_center = [0.5, .8 , 0.0]
-init_width = .03
+init_width = .05
 init_height = .15
 init_radius = .125
 init_plane_dir = [1.0, 0.0, 0.0]
