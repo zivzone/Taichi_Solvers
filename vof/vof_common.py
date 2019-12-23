@@ -77,6 +77,7 @@ def clear_data_temp():
     Flags_temp[i,j,k] = 0
     C_temp[i,j,k] = 0.0
 
+
 def clear_data_and_deactivate():
   Flags.ptr.snode().parent.parent.clear_data_and_deactivate()
 
@@ -120,7 +121,7 @@ class flag_enum(IntFlag):
   NONE = 0
   CELL_ACTIVE = auto()
   CELL_INTERFACE = auto()
-  CELL_GHOST = auto()
+  CELL_BUFFER = auto()
   X_FACE_ACTIVE = auto()
   Y_FACE_ACTIVE = auto()
   Z_FACE_ACTIVE = auto()
@@ -134,8 +135,8 @@ def is_active_cell(i,j,k):
   return Flags[i,j,k]&flag_enum.CELL_ACTIVE==flag_enum.CELL_ACTIVE
 
 @ti.func
-def is_ghost_cell(i,j,k):
-  return Flags[i,j,k]&flag_enum.CELL_GHOST==flag_enum.CELL_GHOST
+def is_buffer_cell(i,j,k):
+  return Flags[i,j,k]&flag_enum.CELL_BUFFER==flag_enum.CELL_BUFFER
 
 @ti.func
 def is_active_x_face(i,j,k):

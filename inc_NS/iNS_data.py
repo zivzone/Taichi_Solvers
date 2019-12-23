@@ -5,39 +5,36 @@ import taichi as ti
 ti.cfg.arch = ti.cuda
 
 # grid parameters
-n_x = 128
-n_y = 128
-n_z = 128
+nx = 128
+ny = 128
+nz = 128
 
-w_x = 1.0
-w_y = 1.0
-w_z = 1.0
+wx = 1.0
+wy = 1.0
+wz = 1.0
 
 n_mg_levels = 3
 
-n_ghost = 1 # needs to be atleast 1
+nx_ghost = nx//2 # number of ghost cells set so that that total grid size is still power of 2
+ny_ghost = ny//2
+nz_ghost = nz//2
 
-# some other constants
-Czero = 1.0e-6
-Cone = 1.0-Czero
-
-dx = w_x/n_x
-dy = w_y/n_y
-dz = w_z/n_z
+dx = wx/nx
+dy = wy/ny
+dz = wz/nz
 
 # setup sparse simulation data arrays
-real = ti.f32
-scalar = lambda: ti.var(dt=real)
+real = ti.f64
 
 U = ti.Vector(n_mg_levels, dt=real) # x velocity on left face
-#V = scalar() # y velocity on bottom face
-#W = scalar() # z velocity on back face
-#P = scalar() # pressure
+V = ti.Vector(n_mg_levels, dt=real) # y velocity on bottom face
+W = ti.Vector(n_mg_levels, dt=real) # z velocity on back face
+P = ti.Vector(n_mg_levels, dt=real) # pressure
 
 @ti.layout
 def place():
   for l in range(n_mg_levels):
-    ti.root.dense(ti.ijk, n_x).place(U(l))
+    ti.root.dense(ti.ijk, nx).place(U(l),V(l),W(l),P(l))
 
 def initialize_kernel(l):
   @ti.kernel

@@ -8,17 +8,17 @@ from vof_visualize import *
 def main():
   initialize()
 
-  for i in range(1):
+  for i in range(1000):
     # update the narrow band
     copy_to_temp()
     clear_data()
     grow_interface_band()
     grow_active_band()
-    grow_ghost_band()
+    grow_buffer_band()
     clear_data_temp()
 
     # reconstruct the interface
-    #reconstruct_plic()
+    reconstruct_plic()
 
     # advect the volume fraction
     #set_face_velocity()

@@ -43,29 +43,29 @@ def grow_active_band():
             Flags[i+di,j+dj,k+dk] = Flags[i+di,j+dj,k+dk]|flag_enum.CELL_ACTIVE
             C[i+di,j+dj,k+dk] = C_temp[i+di,j+dj,k+dk]
       # flag faces of active cells as active
+      """
       for dk in ti.static(range(-1,2)):
         for dj in ti.static(range(-1,2)):
           for di in ti.static(range(-1,3)):
             Flags[i+di,j+dj,k+dk] = Flags[i+di,j+dj,k+dk]|flag_enum.X_FACE_ACTIVE
-      # flag faces of active cells as active
       for dk in ti.static(range(-1,2)):
         for dj in ti.static(range(-1,3)):
           for di in ti.static(range(-1,2)):
             Flags[i+di,j+dj,k+dk] = Flags[i+di,j+dj,k+dk]|flag_enum.Y_FACE_ACTIVE
-      # flag faces of active cells as active
       for dk in ti.static(range(-1,3)):
         for dj in ti.static(range(-1,2)):
           for di in ti.static(range(-1,2)):
             Flags[i+di,j+dj,k+dk] = Flags[i+di,j+dj,k+dk]|flag_enum.Z_FACE_ACTIVE
+      """
 
 @ti.kernel
-def grow_ghost_band():
+def grow_buffer_band():
   for i,j,k in Flags:
     if is_internal_cell(i,j,k) and is_active_cell(i,j,k):
-      # flag neighbors as ghost if they arnt active
-      for dk in (range(-1,2)):
-        for dj in (range(-1,2)):
+      # flag neighbors of active cells as buffer cells
+      for dk in ti.static(range(-1,2)):
+        for dj in ti.static(range(-1,2)):
           for di in ti.static(range(-1,2)):
             if not is_active_cell(i+di,j+dj,k+dk):
-              Flags[i+di,j+dj,k+dk] = flag_enum.CELL_GHOST
+              Flags[i+di,j+dj,k+dk] = flag_enum.CELL_BUFFER
               C[i+di,j+dj,k+dk] = C[i,j,k]

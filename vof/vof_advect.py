@@ -16,7 +16,7 @@ def back_track_DMC(dt: ti.f32):
   # compute the Dual Mesh Characteristic velocity at vertices
   for i,j,k in Flags:
     if is_internal_vertex(i,j,k):
-      x,y,z = get_vert_loc(i,j,k):
+      x,y,z = get_vert_loc(i,j,k)
       # x-direction
       a = 0.0
       if Vel_vert[i,j,k][0] <=0:
@@ -287,8 +287,8 @@ def calc_vol_frac(phi):
     # count number and store location of cut edges in each direction
     ni = 0
     li = [1.0,1.0,1.0,1.0]
-    for k in ti.static(range(2):
-      for j in ti.static(range(2):
+    for k in ti.static(range(2)):
+      for j in ti.static(range(2)):
         if phi[0][j][k]*phi[1][j][k] < 0:
           li[ni] = -phi[0][j][k]/(phi[1][j][k]-phi[0][j][k])
           ni+=1
@@ -331,8 +331,8 @@ def calc_vol_frac(phi):
     l_old = 0.0
     for n in range(nd+1):
       # interpolate phi along edge at cut locations to get subcell vertex phi
-      for k in ti.static(range(2):
-        for j in ti.static(range(2):
+      for k in ti.static(range(2)):
+        for j in ti.static(range(2)):
           phi[1][j][k] = phi_temp[0][j][k] + l[n]*(phi_temp[1][j][k]-phi_temp[0][j][k])
 
       all_neg,all_pos = all_sign(phi)

@@ -22,7 +22,7 @@ def init_cells():
       Flags[i,j,k] = flag_enum.CELL_ACTIVE
     else:
       C[i,j,k] = (1.0+phi/abs(phi))/2.0
-      Flags[i,j,k] = flag_enum.CELL_GHOST
+      Flags[i,j,k] = flag_enum.CELL_BUFFER
 
 @ti.func
 def get_phi_zalesaks_disk(x,y,z):

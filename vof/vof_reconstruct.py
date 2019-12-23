@@ -28,7 +28,7 @@ def calc_C(alpha, m):
 
     # the coefficients of the normal must be ordered as: m1 < m2 < m3
     m1 = ti.min(mx,my)
-    m3 = ti.max(ti.max(mx,my),1.0e-6)
+    m3 = ti.max(ti.max(mx,my),small)
     m2 = mz*1.0
     if (m2 < m1):
       tmp = m1*1.0
@@ -41,7 +41,7 @@ def calc_C(alpha, m):
 
     m12 = m1 + m2
     mm  = ti.min(m12,m3)
-    pr  = ti.max(6.0*m1*m2*m3,1.0e-7)
+    pr  = ti.max(6.0*m1*m2*m3,small)
     V1  = m1*m1*m1/pr
 
     if (a <  m1):
@@ -82,7 +82,7 @@ def my_cbrt(n):
     a = 0.0
     b = n*1.0
     root = (a+b)/2.0
-    while (root*root*root-n >1e-6 or iter < 100):
+    while (root*root*root-n >small or iter < 100):
       root = (a+b)/2.0
       if root*root*root<n:
         a = root*1.0
@@ -93,7 +93,7 @@ def my_cbrt(n):
     a = 1.0
     b = n*1.0
     root = (a+b)/2.0
-    while (root*root*root-n >1e-6 or iter < 100):
+    while (root*root*root-n > small or iter < 100):
       root = (a+b)/2.0
       if root*root*root>n:
         a = root*1.0
@@ -126,7 +126,7 @@ def calc_alpha(c, m):
 
     # the coefficients of the normal must be ordered as: m1 < m2 < m3
     m1 = ti.min(mx,my)
-    m3 = ti.max(ti.max(mx,my),1.0e-7)
+    m3 = ti.max(ti.max(mx,my),small)
     m2 = mz
     if (m2 < m1):
       tmp = m1
@@ -139,7 +139,7 @@ def calc_alpha(c, m):
 
     # get ranges: V1<V2<v3;
     m12 = m1 + m2
-    pr  = ti.max(6.0*m1*m2*m3,1.0e-8)
+    pr  = ti.max(6.0*m1*m2*m3,small)
     V1  = m1*m1*m1/pr
     V2  = V1 + 0.5*(m2-m1)/m3
     V3  = 0.0
@@ -279,7 +279,7 @@ def ELVIRA(i, j, k):
         n[1] = -1.0
 
       # make sum of components = 1 for PLIC reconstruction and reconstruct
-      rdenom = 1.0/(ti.max(ti.abs(n[0]) + ti.abs(n[1]) + ti.abs(n[2]) , 1.0e-20))
+      rdenom = 1.0/(ti.abs(n[0]) + ti.abs(n[1]) + ti.abs(n[2]))
       n[0] = -n[0]*rdenom
       n[1] = -n[1]*rdenom
       n[2] = -n[2]*rdenom
@@ -328,7 +328,7 @@ def ELVIRA(i, j, k):
         n[2] = -1.0
 
       # make sum of components = 1 for PLIC reconstruction and reconstruct
-      rdenom = 1.0/(ti.max(ti.abs(n[0]) + ti.abs(n[1]) + ti.abs(n[2]) , 1.0e-20));
+      rdenom = 1.0/(ti.abs(n[0]) + ti.abs(n[1]) + ti.abs(n[2]));
       n[0] = -n[0]*rdenom
       n[1] = -n[1]*rdenom
       n[2] = -n[2]*rdenom

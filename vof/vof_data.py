@@ -1,21 +1,23 @@
 import numpy as np
 import taichi as ti
 
-ti.cfg.arch = ti.x86_64
-#ti.cfg.arch = ti.cuda
+ti.get_runtime().set_default_fp(ti.f32)
+
+#ti.cfg.arch = ti.x86_64
+ti.cfg.arch = ti.cuda
 
 # grid parameters
 # ******************************************************************************
 
 # internel grid size
-nx = 512
-ny = 512
+nx = 128
+ny = 128
 nz = 2
 
 # domain dimensions
-wx = 1000.0
-wy = 1000.0
-wz = 4.0
+wx = 1.0
+wy = 1.0
+wz = 1.0
 
 b_size = 4
 sb_size = b_size*4
@@ -23,17 +25,17 @@ n_init_subcells = 4
 
 # initial phi params
 init_phi = 0 # 0 = zalesaks disk, 1 = cylinder
-init_center = [500.0, 800.0 , 0.0]
-init_width = 25
-init_height = 150
-init_radius = 100.0
+init_center = [0.5, .8 , 0.0]
+init_width = .03
+init_height = .15
+init_radius = .125
 init_plane_dir = [1.0, 0.0, 0.0]
 
 # some other constants
 Czero = 1.0e-6
 Cone = 1.0-Czero
 small = 1.0e-6
-big  = 1.0e6
+big  = 1.0e10
 
 nx_ghost = nx//2 # number of ghost cells set so that that total grid size is still power of 2
 ny_ghost = ny//2
@@ -47,6 +49,7 @@ dx = wx/nx
 dy = wy/ny
 dz = wz/nz
 
+print(nz_ghost)
 
 # setup sparse simulation data arrays
 # *****************************************************************************
@@ -75,10 +78,16 @@ C_temp = scalar()
 
 @ti.layout
 def data():
-  block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).bitmasked()
-  for f in [Flags, C, M, Alpha, U, V, W, Vel_vert, Vert_pos, Phi, DCx, DCy, DCz]:
-    block.dense(ti.ijk, b_size).place(f)
+  #block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).bitmasked()
+  #for f in [Flags, C, M, Alpha, U, V, W, Vel_vert, Vert_pos, Phi, DCx, DCy, DCz]:
+  #  block.dense(ti.ijk, b_size).place(f)
 
-  block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).bitmasked()
-  for f in [Flags_temp, C_temp]:
-    block.dense(ti.ijk, b_size).place(f)
+  #block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).bitmasked()
+  #for f in [Flags_temp, C_temp]:
+  #  block.dense(ti.ijk, b_size).place(f)
+
+  ti.root.dense(ti.ijk, [nx_tot, ny_tot, nz_tot]) \
+  .place(Flags, C, M, Alpha, U, V, W, Vel_vert, Vert_pos, Phi, DCx, DCy, DCz)
+
+  ti.root.dense(ti.ijk, [nx_tot, ny_tot, nz_tot]) \
+  .place(Flags_temp, C_temp)

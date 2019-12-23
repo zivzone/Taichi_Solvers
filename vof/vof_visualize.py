@@ -20,7 +20,7 @@ def Flags_to_img(img: ti.ext_arr()):
           img[ii,jj] = 1.0
         elif is_active_cell(i,j,k):
           img[ii,jj] = 2.0/3.0
-        elif is_ghost_cell(i,j,k):
+        elif is_buffer_cell(i,j,k):
           img[ii,jj] = 1.0/3.0
         else:
           img[ii,jj] = 1.0/9.0
@@ -45,6 +45,11 @@ def M_to_img(img1: ti.ext_arr(), img2: ti.ext_arr(), img3: ti.ext_arr()):
         img2[ii,jj] = ti.abs(ti.cast(M[i,j,k][1],ti.f32))
         img3[ii,jj] = ti.abs(ti.cast(M[i,j,k][2],ti.f32))
 
+@ti.kernel
+def internal_cells_to_img(img: ti.ext_arr()):
+  for i,j,k in Flags:
+    if is_internal_cell(i,j,k):
+      img[i,j] = 1.0
 
 def write_Flags_png(n):
   img = np.zeros((nx,ny),dtype=np.float32)
@@ -77,3 +82,9 @@ def write_M_png(n):
   cv2.imwrite("output/Mx"+str(n)+".png", img1 * 255)
   cv2.imwrite("output/My"+str(n)+".png", img2 * 255)
   cv2.imwrite("output/Mz"+str(n)+".png", img3 * 255)
+
+def show_domain():
+  img = np.zeros((nx_tot,ny_tot),dtype=np.float32)
+  internal_cells_to_img(img)
+  plt.pcolor(img)
+  plt.show()
