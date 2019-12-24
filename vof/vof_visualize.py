@@ -41,9 +41,9 @@ def M_to_img(img1: ti.ext_arr(), img2: ti.ext_arr(), img3: ti.ext_arr()):
     if is_internal_cell(i,j,k):
       ii,jj = subtract_ext(i,j)
       if k == nz_ext+1:
-        img1[ii,jj] = ti.abs(ti.cast(M[i,j,k][0],ti.f32))
-        img2[ii,jj] = ti.abs(ti.cast(M[i,j,k][1],ti.f32))
-        img3[ii,jj] = ti.abs(ti.cast(M[i,j,k][2],ti.f32))
+        img1[ii,jj] = .5*ti.cast(M[i,j,k][0],ti.f32)+.5
+        img2[ii,jj] = .5*ti.cast(M[i,j,k][1],ti.f32)+.5
+        img3[ii,jj] = .5*ti.cast(M[i,j,k][2],ti.f32)+.5
 
 @ti.kernel
 def internal_cells_to_img(img: ti.ext_arr()):
@@ -69,9 +69,9 @@ def write_C_png(n):
 
 
 def write_M_png(n):
-  img1 = np.zeros((nx,ny),dtype=np.float32)
-  img2 = np.zeros((nx,ny),dtype=np.float32)
-  img3 = np.zeros((nx,ny),dtype=np.float32)
+  img1 = np.zeros((nx,ny),dtype=np.float32)+.5
+  img2 = np.zeros((nx,ny),dtype=np.float32)+.5
+  img3 = np.zeros((nx,ny),dtype=np.float32)+.5
   M_to_img(img1, img2, img3)
   img1 = np.transpose(img1)
   img1 = np.flipud(img1)

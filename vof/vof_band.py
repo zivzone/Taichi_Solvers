@@ -42,7 +42,7 @@ def grow_active_band():
           for di in ti.static(range(-1,2)):
             Flags[i+di,j+dj,k+dk] = Flags[i+di,j+dj,k+dk]|flag_enum.CELL_ACTIVE
             C[i+di,j+dj,k+dk] = C_temp[i+di,j+dj,k+dk]
-      """
+      """ not sure why this causes bugs with gpu backend
       # flag faces of active cells as active
       for dk in ti.static(range(-1,2)):
         for dj in ti.static(range(-1,2)):

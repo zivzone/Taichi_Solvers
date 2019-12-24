@@ -62,6 +62,33 @@ def set_face_velocity():
     u,v,w = get_vel(x,y,z-dz/2.0) # at face loc
     W[i,j,k] = w
 
+@ti.func
+def get_phi_from_plic(x,y,z,i,j,k):
+  # loc relative to interface cell origin
+  x0,y0,z0 = get_vert_loc(i,j,k)
+  x = x-x0
+  y = y-y0
+  z = z-z0
+
+  # phi is distance from plic plane
+  phi = (M[i,j,k][0]*x + M[i,j,k][1]*y + M[i,j,k][2]*z - Alpha[i,j,k])\
+  /ti.sqrt(M[i,j,k][0]*M[i,j,k][0] + M[i,j,k][1]*M[i,j,k][1] + M[i,j,k][2]*M[i,j,k][2])
+
+  return phi
+
+@ti.func
+def get_phi_from_plic_smooth(x,y,z,i,j,k):
+  # loc relative to interface cell origin
+  x0,y0,z0 = get_vert_loc(i,j,k)
+  x = x-x0
+  y = y-y0
+  z = z-z0
+
+  # phi is distance from plic plane
+  phi = (M[i,j,k][0]*x + M[i,j,k][1]*y + M[i,j,k][2]*z - Alpha[i,j,k]) \
+  /ti.sqrt(M[i,j,k][0]*M[i,j,k][0] + M[i,j,k][1]*M[i,j,k][1] + M[i,j,k][2]*M[i,j,k][2])
+  return phi
+
 
 @ti.kernel
 def clear_data():

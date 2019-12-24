@@ -20,37 +20,38 @@ def back_track_DMC():
       x,y,z = get_vert_loc(i,j,k)
       # x-direction
       a = 0.0
-      if Vel_vert[i,j,k][0] <=0:
+      if Vel_vert[i,j,k][0] <= 0:
         a = (Vel_vert[i,j,k][0] - Vel_vert[i-1,j,k][0])/dx
       else:
         a = -(Vel_vert[i,j,k][0] - Vel_vert[i+1,j,k][0])/dx
 
-      if ti.abs(a) < small:
+      if ti.abs(a) <= small:
         Vert_pos[i,j,k][0] = x - dt*Vel_vert[i,j,k][0]
       else:
         Vert_pos[i,j,k][0] = x - (1.0-ti.exp(-a*dt))*Vel_vert[i,j,k][0]/a
 
       # y-direction
-      if Vel_vert[i,j,k][1] <=0:
+      if Vel_vert[i,j,k][1] <= 0:
         a = (Vel_vert[i,j,k][1] - Vel_vert[i,j-1,k][1])/dy
       else:
         a = -(Vel_vert[i,j,k][1] - Vel_vert[i,j+1,k][1])/dy
 
-      if ti.abs(a) < small:
+      if ti.abs(a) <= small:
         Vert_pos[i,j,k][1] = y - dt*Vel_vert[i,j,k][0]
       else:
         Vert_pos[i,j,k][1] = y - (1.0-ti.exp(-a*dt))*Vel_vert[i,j,k][1]/a
 
       # z-direction
-      if Vel_vert[i,j,k][2] <=0:
+      if Vel_vert[i,j,k][2] <= 0:
         a = (Vel_vert[i,j,k][2] - Vel_vert[i,j,k-1][2])/dz
       else:
         a = -(Vel_vert[i,j,k][2] - Vel_vert[i,j,k+1][2])/dz
 
-      if ti.abs(a) < small:
+      if ti.abs(a) <= small:
         Vert_pos[i,j,k][2] = z - dt*Vel_vert[i,j,k][2]
       else:
         Vert_pos[i,j,k][2] = z - (1.0-ti.exp(-a*dt))*Vel_vert[i,j,k][2]/a
+
 
 @ti.kernel
 def compute_DC():
@@ -64,7 +65,7 @@ def compute_DC():
       iuw,juw,kuw = get_upwind_x(i,j,k)
 
       # intialize DCx to upwind volume fraction
-      DCx[i,j,k] = C[iuw,juw,kuw]
+      DCx[i,j,k] = C[iuw,juw,kuw]*U[i,j,k]*dy*dz
       if is_interface_cell(iuw,juw,kuw):
         # compute the level set at each vertex on this face at time t
         phi = [[[0.0,0.0],[0.0,0.0]],
@@ -81,9 +82,9 @@ def compute_DC():
         phi[0][1][1] = get_phi_from_plic(Vert_pos[i,j,k+1][0],Vert_pos[i,j,k+1][1],Vert_pos[i,j,k+1][2],iuw,juw,kuw)
         phi[1][1][1] = get_phi_from_plic(Vert_pos[i,j+1,k+1][0],Vert_pos[i,j+1,k+1][1],Vert_pos[i,j+1,k+1][2],iuw,juw,kuw)
 
-        #calculate th volume fraction of the space-time volume
-        vol = calc_vol_frac(phi)
-        DCx[i,j,k] = vol
+        #calculate the volume fraction of the space-time volume
+        vf = calc_vol_frac(phi)
+        DCx[i,j,k] = vf*U[i,j,k]*dy*dz
 
     # flux the bottom face
     if is_internal_y_face(i,j,k) and is_active_y_face(i,j,k):
@@ -91,7 +92,7 @@ def compute_DC():
       iuw,juw,kuw = get_upwind_y(i,j,k)
 
       # intialize DCy to upwind volume fraction
-      DCy[i,j,k] = C[iuw,juw,kuw]
+      DCy[i,j,k] = C[iuw,juw,kuw]*V[i,j,k]*dx*dz
       if is_interface_cell(iuw,juw,kuw):
         # compute the level set at each vertex on this face at time t
         phi = [[[0.0,0.0],[0.0,0.0]],
@@ -108,9 +109,9 @@ def compute_DC():
         phi[0][1][1] = get_phi_from_plic(Vert_pos[i,j,k+1][0],Vert_pos[i,j,k+1][1],Vert_pos[i,j,k+1][2],iuw,juw,kuw)
         phi[1][1][1] = get_phi_from_plic(Vert_pos[i+1,j,k+1][0],Vert_pos[i+1,j,k+1][1],Vert_pos[i+1,j,k+1][2],iuw,juw,kuw)
 
-        #calculate th volume fraction of the space-time volume
-        vol = calc_vol_frac(phi)
-        DCy[i,j,k] = vol
+        #calculate the volume fraction of the space-time volume
+        vf = calc_vol_frac(phi)
+        DCy[i,j,k] = vf*V[i,j,k]*dx*dz
 
     # flux the back face
     if is_internal_z_face(i,j,k) and is_active_z_face(i,j,k):
@@ -118,7 +119,7 @@ def compute_DC():
       iuw,juw,kuw = get_upwind_z(i,j,k)
 
       # intialize DCy to upwind volume fraction
-      DCz[i,j,k] = C[iuw,juw,kuw]
+      DCz[i,j,k] = C[iuw,juw,kuw]*W[i,j,k]*dx*dy
       if is_interface_cell(iuw,juw,kuw):
         # compute the level set at each vertex on this face at time t
         phi = [[[0.0,0.0],[0.0,0.0]],
@@ -135,9 +136,9 @@ def compute_DC():
         phi[0][1][1] = get_phi_from_plic(Vert_pos[i,j+1,k][0],Vert_pos[i,j+1,k][1],Vert_pos[i,j+1,k][2],iuw,juw,kuw)
         phi[1][1][1] = get_phi_from_plic(Vert_pos[i+1,j+1,k][0],Vert_pos[i+1,j+1,k][1],Vert_pos[i+1,j+1,k][2],iuw,juw,kuw)
 
-        #calculate th volume fraction of the space-time volume
-        vol = calc_vol_frac(phi)
-        DCz[i,j,k] = vol
+        #calculate the volume fraction of the space-time volume
+        vf = calc_vol_frac(phi)
+        DCz[i,j,k] = vf*W[i,j,k]*dx*dy
 
 
 
@@ -152,7 +153,7 @@ def get_upwind_x(i,j,k):
   if U[i,j,k] > 0.0:
     iup = i-1
     sgn = 1.0
-
+  """
   if not is_interface_cell(iup,j,k):
     # the face neigbor is not an interface cell
     # instead choose the edge or vertex neigbor with the highest upwind velocity
@@ -163,7 +164,7 @@ def get_upwind_x(i,j,k):
           jup = j+dj
           kup = k+dk
           umax = sgn*U[iup,j+dj,k+dk]
-
+  """
   return iup,jup,kup
 
 @ti.func
@@ -177,7 +178,7 @@ def get_upwind_y(i,j,k):
   if V[i,j,k] > 0.0:
     jup = j-1
     sgn = 1.0
-
+  """
   if not is_interface_cell(i,jup,k):
     # the face neighbor is not an interface cell
     # instead choose the edge or vertex neigbor with the highest upwind velocity
@@ -188,7 +189,7 @@ def get_upwind_y(i,j,k):
           iup = i+di
           kup = k+dk
           umax = sgn*V[i+di,jup,k+dk]
-
+  """
   return iup,jup,kup
 
 @ti.func
@@ -200,9 +201,9 @@ def get_upwind_z(i,j,k):
   kup = k
   sgn = -1.0
   if W[i,j,k] > 0.0:
-    jup = j-1
+    kup = k-1
     sgn = 1.0
-
+  """
   if not is_interface_cell(i,jup,k):
     # the face neighbor is not an interface cell
     # instead choose the edge or vertex neigbor with the highest upwind velocity
@@ -213,20 +214,9 @@ def get_upwind_z(i,j,k):
           iup = i+di
           jup = j+dj
           umax = sgn*W[i+di,j+dj,kup]
-
+  """
   return iup,jup,kup
 
-@ti.func
-def get_phi_from_plic(x,y,z,i,j,k):
-  # loc relative to interface cell origin
-  x0,y0,z0 = get_vert_loc(i,j,k)
-  x = x-x0
-  y = y-y0
-  z = z-z0
-
-  # phi is distance from plic plane
-  phi = (M[i,j,k][0]*x + M[i,j,k][1]*y + M[i,j,k][2]*z - Alpha[i,j,k])/np.sqrt(3.0)
-  return phi
 
 @ti.func
 def backtrack_dmc(x,y,z,i,j,k,dt):
@@ -368,7 +358,7 @@ def calc_vol_frac_b(phi):
   xq = [-np.sqrt(3.0/5.0), 0, np.sqrt(3.0/5.0)]; # quadrature points
   wq = [5.0/9.0, 8.0/9.0, 5.0/9.0];              # quadrature weights
 
-  vol = 0.0
+  vf = 0.0
   Jx = l[0]/2.0 # jacobian
   z0 = 0.0
   for i in ti.static(range(3)):
@@ -381,18 +371,18 @@ def calc_vol_frac_b(phi):
       y = (xq[j]+1.0)*Jy
       z = -((Bxy*y + Bx)*x + By*y + B) / ((Bxyz*y + Bxz)*x + Byz*y + Bz)  # z location of interface
 
-      vol+= z*wq[i]*wq[j]*Jx*Jy
+      vf+= z*wq[i]*wq[j]*Jx*Jy
 
   if phi[0][0][0] < 0.0:
-    vol = 1.0-vol
+    vf = 1.0-vf
 
-  return vol
+  return vf
 
 @ti.func
 def calc_vol_frac(phi):
   # compute the volume fraction from level set at vertices
   # by splitting the cell into elementary cases then using gaussian quadrature
-  vol = 0.0
+  vf = 0.0
 
   all_neg,all_pos = all_sign(phi)
   if not all_pos and not all_neg:
@@ -469,9 +459,9 @@ def calc_vol_frac(phi):
 
       all_neg,all_pos = all_sign(phi)
       if not all_pos and not all_neg:
-        vol += calc_vol_frac_b(phi)*(l[n]-l_old)
+        vf += calc_vol_frac_b(phi)*(l[n]-l_old)
       elif all_pos:
-        vol += l[n]-l_old
+        vf += l[n]-l_old
 
       l_old = l[n]
 
@@ -481,6 +471,92 @@ def calc_vol_frac(phi):
           phi[0][j][k] = phi[1][j][k]
 
   elif all_pos:
-    vol = 1.0
+    vf = 1.0
 
-  return vol
+  return vf
+
+
+@ti.kernel
+def update_C():
+  for i,j,k in Flags:
+    if is_active_cell(i,j,k):
+      C[i,j,k] = C[i,j,k] + 1.0/vol*(DCx[i,j,k] - DCx[i+1,j,k] \
+                          + DCy[i,j,k] - DCy[i,j+1,k] \
+                          + DCz[i,j,k] - DCz[i,j,k+1])
+
+@ti.kernel
+def zero_DC_bounding():
+  for i,j,k in Flags:
+    DCx_b[i,j,k] = 0.0
+    DCy_b[i,j,k] = 0.0
+    DCz_b[i,j,k] = 0.0
+
+@ti.kernel
+def compute_DC_bounding():
+  # redistribute C after advection such that it is not above one or below zero
+  for i,j,k in Flags:
+    if is_active_cell(i,j,k):
+      dt = Dt[None]
+      if C[i,j,k] > 1.0:
+        # the extra C we need to redistribute to downwind cells
+        extraC = (C[i,j,k]-1.0)*dx*dy*dz
+
+        # sum of the downwind fluxes
+        flux_x_0 = min(0.0,U[i,j,k]*dy*dz)
+        flux_x_1 = max(0.0,U[i+1,j,k]*dy*dz)
+        flux_y_0 = min(0.0,V[i,j,k]*dx*dz)
+        flux_y_1 = max(0.0,V[i,j+1,k]*dx*dz)
+        flux_z_0 = min(0.0,W[i,j,k]*dx*dy)
+        flux_z_1 = max(0.0,W[i,j,k+1]*dx*dy)
+
+        flux_sum = flux_x_0 + flux_x_1 + flux_y_0 + flux_y_1 + flux_z_0 + flux_z_1
+
+        # compute redistribution deltaC
+        if U[i,j,k] < 0.0:
+          DCx_b[i,j,k] =  min(flux_x_0/flux_sum*extraC*vol, flux_x_0*dt-DCx[i,j,k])
+        if U[i+1,j,k] > 0.0:
+          DCx_b[i+1,j,k] =  min(flux_x_1/flux_sum*extraC*vol, flux_x_1*dt-DCx[i+1,j,k])
+        if V[i,j,k] < 0.0:
+          DCy_b[i,j,k] =  min(flux_y_0/flux_sum*extraC*vol, flux_y_0*dt-DCy[i,j,k])
+        if V[i,j+1,k] > 0.0:
+          DCy_b[i,j+1,k] =  min(flux_y_1/flux_sum*extraC*vol, flux_y_1*dt-DCx[i,j+1,k])
+        if W[i,j,k] < 0.0:
+          DCz_b[i,j,k] =  min(flux_z_0/flux_sum*extraC*vol, flux_z_0*dt-DCz[i,j,k])
+        if W[i,j,k+1] > 0.0:
+          DCz_b[i,j,k+1] =  min(flux_z_1/flux_sum*extraC*vol, flux_z_1*dt-DCz[i,j,k+1])
+
+      if C[i,j,k] < 0.0:
+        # the extra C we need to redistribute to downwind cells
+        extraC = -C[i,j,k]*dx*dy*dz
+
+        # sum of the downwind fluxes
+        flux_x_0 = min(0.0,U[i,j,k]*dy*dz)
+        flux_x_1 = max(0.0,U[i+1,j,k]*dy*dz)
+        flux_y_0 = min(0.0,V[i,j,k]*dx*dz)
+        flux_y_1 = max(0.0,V[i,j+1,k]*dx*dz)
+        flux_z_0 = min(0.0,W[i,j,k]*dx*dy)
+        flux_z_1 = max(0.0,W[i,j,k+1]*dx*dy)
+
+        flux_sum = flux_x_0 + flux_x_1 + flux_y_0 + flux_y_1 + flux_z_0 + flux_z_1
+
+        # compute redistribution deltaC
+        if U[i,j,k] < 0.0:
+          DCx_b[i,j,k] =  min(flux_x_0/flux_sum*extraC*vol, DCx[i,j,k])
+        if U[i+1,j,k] > 0.0:
+          DCx_b[i+1,j,k] =  min(flux_x_1/flux_sum*extraC*vol, DCx[i+1,j,k])
+        if V[i,j,k] < 0.0:
+          DCy_b[i,j,k] =  min(flux_y_0/flux_sum*extraC*vol, DCy[i,j,k])
+        if V[i,j+1,k] > 0.0:
+          DCy_b[i,j+1,k] =  min(flux_y_1/flux_sum*extraC*vol, DCx[i,j+1,k])
+        if W[i,j,k] < 0.0:
+          DCz_b[i,j,k] =  min(flux_z_0/flux_sum*extraC*vol, DCz[i,j,k])
+        if W[i,j,k+1] > 0.0:
+          DCz_b[i,j,k+1] =  min(flux_z_1/flux_sum*extraC*vol, DCz[i,j,k+1])
+
+@ti.kernel
+def update_C_bounding():
+  for i,j,k in Flags:
+    if is_active_cell(i,j,k):
+      C[i,j,k] = C[i,j,k] + 1.0/vol*(DCx_b[i,j,k] - DCx_b[i+1,j,k] \
+                          + DCy_b[i,j,k] - DCy_b[i,j+1,k] \
+                          + DCz_b[i,j,k] - DCz_b[i,j,k+1])

@@ -10,14 +10,14 @@ ti.cfg.arch = ti.cuda
 # ******************************************************************************
 
 # internel grid size
-nx = 1024
-ny = 1024
+nx = 256
+ny = 256
 nz = 4
 
 # domain dimensions
 wx = 1.0
 wy = 1.0
-wz = 1.0
+wz = .04
 
 b_size = 4
 sb_size = b_size*4
@@ -26,7 +26,7 @@ n_init_subcells = 4
 # initial phi params
 init_phi = 0 # 0 = zalesaks disk, 1 = cylinder
 init_center = [0.5, .8 , 0.0]
-init_width = .05
+init_width = 0
 init_height = .15
 init_radius = .125
 init_plane_dir = [1.0, 0.0, 0.0]
@@ -51,6 +51,10 @@ dx = wx/nx
 dy = wy/ny
 dz = wz/nz
 
+print(dx)
+
+vol = dx*dy*dz
+
 # setup sparse simulation data arrays
 # *****************************************************************************
 real = ti.f32
@@ -72,6 +76,9 @@ Phi = scalar()      # level set at cell center
 DCx = scalar()      # delta volume fraction on left face
 DCy = scalar()      # delta volume fraction on bottom face
 DCz = scalar()      # delta volume fraction on back face
+DCx_b = scalar()    # delta volume fraction on left face, used for bounding procedure
+DCy_b = scalar()    # delta volume fraction on bottom face, used for bounding procedure
+DCz_b = scalar()    # delta volume fraction on back face, used for bounding procedure
 Dt = scalar()       # delta t
 
 Flags_temp = iscalar()
@@ -88,7 +95,7 @@ def data():
   #  block.dense(ti.ijk, b_size).place(f)
 
   ti.root.dense(ti.ijk, [nx_tot, ny_tot, nz_tot]) \
-  .place(Flags, C, M, Alpha, U, V, W, Vel_vert, Vert_pos, Phi, DCx, DCy, DCz)
+  .place(Flags, C, M, Alpha, U, V, W, Vel_vert, Vert_pos, Phi, DCx, DCy, DCz, DCx_b, DCy_b, DCz_b)
 
   ti.root.dense(ti.ijk, [nx_tot, ny_tot, nz_tot]) \
   .place(Flags_temp, C_temp)
