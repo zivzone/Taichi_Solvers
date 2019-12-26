@@ -65,7 +65,7 @@ def compute_DC():
       iuw,juw,kuw = get_upwind_x(i,j,k)
 
       # intialize DCx to upwind volume fraction
-      DCx[i,j,k] = C[iuw,juw,kuw]*U[i,j,k]*dy*dz
+      DCx[i,j,k] = C[iuw,juw,kuw]*U[i,j,k]*dy*dz*dt
       if is_interface_cell(iuw,juw,kuw):
         # compute the level set at each vertex on this face at time t
         phi = [[[0.0,0.0],[0.0,0.0]],
@@ -84,7 +84,7 @@ def compute_DC():
 
         #calculate the volume fraction of the space-time volume
         vf = calc_vol_frac(phi)
-        DCx[i,j,k] = vf*U[i,j,k]*dy*dz
+        DCx[i,j,k] = vf*U[i,j,k]*dy*dz*dt
 
     # flux the bottom face
     if is_internal_y_face(i,j,k) and is_active_y_face(i,j,k):
@@ -92,7 +92,7 @@ def compute_DC():
       iuw,juw,kuw = get_upwind_y(i,j,k)
 
       # intialize DCy to upwind volume fraction
-      DCy[i,j,k] = C[iuw,juw,kuw]*V[i,j,k]*dx*dz
+      DCy[i,j,k] = C[iuw,juw,kuw]*V[i,j,k]*dx*dz*dt
       if is_interface_cell(iuw,juw,kuw):
         # compute the level set at each vertex on this face at time t
         phi = [[[0.0,0.0],[0.0,0.0]],
@@ -111,7 +111,7 @@ def compute_DC():
 
         #calculate the volume fraction of the space-time volume
         vf = calc_vol_frac(phi)
-        DCy[i,j,k] = vf*V[i,j,k]*dx*dz
+        DCy[i,j,k] = vf*V[i,j,k]*dx*dz*dt
 
     # flux the back face
     if is_internal_z_face(i,j,k) and is_active_z_face(i,j,k):
@@ -119,7 +119,7 @@ def compute_DC():
       iuw,juw,kuw = get_upwind_z(i,j,k)
 
       # intialize DCy to upwind volume fraction
-      DCz[i,j,k] = C[iuw,juw,kuw]*W[i,j,k]*dx*dy
+      DCz[i,j,k] = C[iuw,juw,kuw]*W[i,j,k]*dx*dy*dt
       if is_interface_cell(iuw,juw,kuw):
         # compute the level set at each vertex on this face at time t
         phi = [[[0.0,0.0],[0.0,0.0]],
@@ -138,7 +138,7 @@ def compute_DC():
 
         #calculate the volume fraction of the space-time volume
         vf = calc_vol_frac(phi)
-        DCz[i,j,k] = vf*W[i,j,k]*dx*dy
+        DCz[i,j,k] = vf*W[i,j,k]*dx*dy*dt
 
 
 
@@ -287,7 +287,6 @@ def all_sign(phi):
 
 @ti.func
 def calc_vol_frac_b(phi):
-  eps = 1.0e-20
   # compute the volume fraction from level set at vertices using gaussian quadrature
 
   # set the origin as the vertex with most edges cut by interface
@@ -305,15 +304,21 @@ def calc_vol_frac_b(phi):
   if i0 == 1:
     for k in ti.static(range(2)):
       for j in ti.static(range(2)):
-        phi[0][j][k],phi[1][j][k] = phi[1][j][k],phi[0][j][k]
+        temp = phi[0][j][k]
+        phi[0][j][k] = phi[1][j][k]
+        phi[1][j][k] = temp
   if j0 == 1:
     for k in ti.static(range(2)):
       for i in ti.static(range(2)):
-        phi[i][0][k],phi[i][1][k] = phi[i][1][k],phi[i][0][k]
+        temp = phi[i][0][k]
+        phi[i][0][k] = phi[i][1][k]
+        phi[i][1][k] = temp
   if k0 == 1:
     for j in ti.static(range(2)):
       for i in ti.static(range(2)):
-        phi[i][j][0],phi[i][j][1] = phi[i][j][1],phi[i][j][0]
+        temp = phi[i][j][0]
+        phi[i][j][0] = phi[i][j][1]
+        phi[i][j][1] = temp
 
   # get distance from the vertex to intersection point on each edge
   l = [1.0,1.0,1.0]
@@ -354,7 +359,7 @@ def calc_vol_frac_b(phi):
     Bx,By = By,Bx
     Bxz,Byz = Byz,Bxz
 
-  #3 point 2d gaussian quadrature of z
+  # 3 point 2d gaussian quadrature of z
   xq = [-np.sqrt(3.0/5.0), 0, np.sqrt(3.0/5.0)]; # quadrature points
   wq = [5.0/9.0, 8.0/9.0, 5.0/9.0];              # quadrature weights
 
@@ -364,19 +369,20 @@ def calc_vol_frac_b(phi):
   for i in ti.static(range(3)):
     x = (xq[i]+1.0)*Jx
     # y integration bounds depends on x
-    y1 = -((Bxz*z0 + Bx)*x + Bz*z0 + B) / ((Bxyz*z0 + Bxy)*x + Byz*z0 + By + eps)
-    y1 = max(min(y1,1.0),0.0)
+    y1 = -((Bxz*z0 + Bx)*x + Bz*z0 + B) / ((Bxyz*z0 + Bxy)*x + Byz*z0 + By + small)
+    if y1 < 0.0 or y1 > 1.0:
+      y1 = 1.0
     Jy = y1/2.0
     for j in ti.static(range(3)):
       y = (xq[j]+1.0)*Jy
-      z = -((Bxy*y + Bx)*x + By*y + B) / ((Bxyz*y + Bxz)*x + Byz*y + Bz)  # z location of interface
-
+      z = -((Bxy*y + Bx)*x + By*y + B) / ((Bxyz*y + Bxz)*x + Byz*y + Bz + small)  # z location of interface
       vf+= z*wq[i]*wq[j]*Jx*Jy
 
   if phi[0][0][0] < 0.0:
     vf = 1.0-vf
 
   return vf
+
 
 @ti.func
 def calc_vol_frac(phi):
@@ -391,22 +397,21 @@ def calc_vol_frac(phi):
     li = ti.Vector([1.0,1.0,1.0,1.0])
     for k in ti.static(range(2)):
       for j in ti.static(range(2)):
-        if phi[0][j][k]*phi[1][j][k] < 0:
+        if phi[0][j][k]*phi[1][j][k] < 0.0:
           li[j+2*k] = -phi[0][j][k]/(phi[1][j][k]-phi[0][j][k])
           ni+=1
-
     nj = 0
     lj = ti.Vector([1.0,1.0,1.0,1.0])
     for k in ti.static(range(2)):
       for i in ti.static(range(2)):
-        if phi[i][0][k]*phi[i][1][k] < 0:
+        if phi[i][0][k]*phi[i][1][k] < 0.0:
           lj[i+2*k] = -phi[i][0][k]/(phi[i][1][k]-phi[i][0][k])
           nj+=1
     nk = 0
     lk = ti.Vector([1.0,1.0,1.0,1.0])
     for j in ti.static(range(2)):
       for i in ti.static(range(2)):
-        if phi[i][j][0]*phi[i][j][1] < 0:
+        if phi[i][j][0]*phi[i][j][1] < 0.0:
           lk[i+2*j] = -phi[i][j][0]/(phi[i][j][1]-phi[i][j][0])
           nk+=1
 
@@ -458,7 +463,7 @@ def calc_vol_frac(phi):
           phi[1][j][k] = phi_temp[0][j][k] + l[n]*(phi_temp[1][j][k]-phi_temp[0][j][k])
 
       all_neg,all_pos = all_sign(phi)
-      if not all_pos and not all_neg:
+      if not all_pos and not all_neg and (l[n]-l_old) > 0.0:
         vf += calc_vol_frac_b(phi)*(l[n]-l_old)
       elif all_pos:
         vf += l[n]-l_old
@@ -468,7 +473,7 @@ def calc_vol_frac(phi):
       #start next subcell at end of the last subcell
       for k in ti.static(range(2)):
         for j in ti.static(range(2)):
-          phi[0][j][k] = phi[1][j][k]
+          phi[0][j][k] = phi_temp[0][j][k] + l[n]*(phi_temp[1][j][k]-phi_temp[0][j][k])
 
   elif all_pos:
     vf = 1.0
@@ -483,6 +488,7 @@ def update_C():
       C[i,j,k] = C[i,j,k] + 1.0/vol*(DCx[i,j,k] - DCx[i+1,j,k] \
                           + DCy[i,j,k] - DCy[i,j+1,k] \
                           + DCz[i,j,k] - DCz[i,j,k+1])
+
 
 @ti.kernel
 def zero_DC_bounding():

@@ -15,9 +15,9 @@ ny = 256
 nz = 4
 
 # domain dimensions
-wx = 1.0
-wy = 1.0
-wz = .04
+wx = 1000
+wy = 1000
+wz = 4
 
 b_size = 4
 sb_size = b_size*4
@@ -25,10 +25,10 @@ n_init_subcells = 4
 
 # initial phi params
 init_phi = 0 # 0 = zalesaks disk, 1 = cylinder
-init_center = [0.5, .8 , 0.0]
+init_center = [500, 800 , 0.0]
 init_width = 0
-init_height = .15
-init_radius = .125
+init_height = 150
+init_radius = 125
 init_plane_dir = [1.0, 0.0, 0.0]
 
 # some other constants
@@ -50,9 +50,6 @@ nz_tot = 2*nz;
 dx = wx/nx
 dy = wy/ny
 dz = wz/nz
-
-print(dx)
-
 vol = dx*dy*dz
 
 # setup sparse simulation data arrays
