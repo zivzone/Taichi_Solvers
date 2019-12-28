@@ -3,32 +3,32 @@ import taichi as ti
 
 ti.get_runtime().set_default_fp(ti.f32)
 
-#ti.cfg.arch = ti.x86_64
-ti.cfg.arch = ti.cuda
+ti.cfg.arch = ti.x86_64
+#ti.cfg.arch = ti.cuda
 
 # grid parameters
 # ******************************************************************************
 
 # internel grid size
-nx = 256
-ny = 256
+nx = 64
+ny = 64
 nz = 4
 
 # domain dimensions
-wx = 1000
-wy = 1000
+wx = 64
+wy = 64
 wz = 4
 
 b_size = 4
 sb_size = b_size*4
-n_init_subcells = 4
+n_init_subcells = 16
 
 # initial phi params
 init_phi = 0 # 0 = zalesaks disk, 1 = cylinder
-init_center = [500, 800 , 0.0]
+init_center = [32.0, 32.0 , 0.0]
 init_width = 0
-init_height = 150
-init_radius = 125
+init_height = 0
+init_radius = 25.13232
 init_plane_dir = [1.0, 0.0, 0.0]
 
 # some other constants
@@ -37,7 +37,8 @@ Cone = 1.0-Czero
 small = 1.0e-6
 big  = 1.0e10
 
-n_ghost = 1
+# computed paramters
+n_ghost = 1 # vof requres 1 ghost cell
 
 nx_ext = nx//2 # number of cells exterior to domain. includes ghost cells
 ny_ext = ny//2

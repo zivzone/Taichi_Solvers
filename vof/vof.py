@@ -7,14 +7,12 @@ from vof_visualize import *
 
 def main():
   initialize()
-
-  for i in range(1):
+  write_C_png(0)
+  for i in range(4):
     # update the narrow band
     copy_to_temp()
     clear_data()
-    grow_interface_band()
-    grow_active_band()
-    grow_buffer_band()
+    grow_band()
     clear_data_temp()
 
     # reconstruct the interface
@@ -31,13 +29,20 @@ def main():
     #compute_DC_bounding()
     #update_C_bounding()
 
+    write_band_png(i+1)
+    write_C_png(i+1)
+    write_M_png(i+1)
+    write_Flag_png(i+1,flag_enum.CELL_INTERFACE, "interface_cell")
+    write_Flag_png(i+1,flag_enum.CELL_ACTIVE, "active_cell")
+    write_Flag_png(i+1,flag_enum.CELL_BUFFER, "buffer_cell")
+    write_Flag_png(i+1,flag_enum.X_FACE_ACTIVE, "active_x_face")
+    write_Flag_png(i+1,flag_enum.Y_FACE_ACTIVE, "active_y_face")
+    write_Flag_png(i+1,flag_enum.Z_FACE_ACTIVE, "active_z_face")
+
     if i%10 ==0:
       print(i)
-  # output pngs
 
-  write_Flags_png(0)
-  write_C_png(0)
-  write_M_png(0)
+
 
   ti.profiler_print()
 if __name__ == '__main__':

@@ -86,7 +86,7 @@ def get_phi_plane(x,y,z):
   b = init_plane_dir[1]/len
   c = init_plane_dir[2]/len
   d = -(init_center[0]*init_plane_dir[0] + init_center[1]*init_plane_dir[1] + init_center[2]*init_plane_dir[2])/len
-  phi = (a*x + b*y + c*z + d)/ti.sqrt(a*a + b*b + c*c)
+  phi = -(a*x + b*y + c*z + d)/ti.sqrt(a*a + b*b + c*c)
   return phi
 
 

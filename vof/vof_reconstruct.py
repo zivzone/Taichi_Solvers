@@ -8,9 +8,9 @@ def reconstruct_plic():
       mx,my,mz,alpha = recon(i,j,k)
       #transform normal vector into physical space
       dlen = np.sqrt(dx*dx+dy*dy+dz*dz)
-      M[i,j,k][0] = mx/dx*dlen
-      M[i,j,k][1] = my/dy*dlen
-      M[i,j,k][2] = mz/dz*dlen
+      M[i,j,k][0] = ti.abs(mx)/dx*dlen
+      M[i,j,k][1] = ti.abs(my)/dy*dlen
+      M[i,j,k][2] = ti.abs(mz)/dz*dlen
       Alpha[i,j,k] = alpha*dlen
 
 
@@ -178,8 +178,8 @@ def calc_alpha(c, m):
       cs = ti.cos(teta)
       alpha = p12*(ti.sqrt(3.0*(1.0-cs*cs)) - cs) + 0.5*(m1+m2+m3)
 
-    #if (c > 0.5):
-    #  alpha = (m1+m2+m3)-alpha
+    if (c > 0.5):
+      alpha = (m1+m2+m3)-alpha
 
   return alpha
 

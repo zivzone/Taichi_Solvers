@@ -1,5 +1,6 @@
 from vof_data import *
 from vof_common import *
+from vof_reconstruct import *
 
 @ti.kernel
 def interp_face_velocity_to_vertex():
@@ -76,7 +77,7 @@ def compute_DC():
         phi[0][1][0] = get_phi_from_plic(x,y,z+dz,iuw,juw,kuw)
         phi[1][1][0] = get_phi_from_plic(x,y+dy,z+dz,iuw,juw,kuw)
 
-        # compute the level set at the lagrangian backtracked vertices
+        # compute the level set at the DMC backtracked vertices
         phi[0][0][1] = get_phi_from_plic(Vert_pos[i,j,k][0],Vert_pos[i,j,k][1],Vert_pos[i,j,k][2],iuw,juw,kuw)
         phi[1][0][1] = get_phi_from_plic(Vert_pos[i,j+1,k][0],Vert_pos[i,j+1,k][1],Vert_pos[i,j+1,k][2],iuw,juw,kuw)
         phi[0][1][1] = get_phi_from_plic(Vert_pos[i,j,k+1][0],Vert_pos[i,j,k+1][1],Vert_pos[i,j,k+1][2],iuw,juw,kuw)
@@ -123,7 +124,7 @@ def compute_DC():
       if is_interface_cell(iuw,juw,kuw):
         # compute the level set at each vertex on this face at time t
         phi = [[[0.0,0.0],[0.0,0.0]],
-               [[0.0,0.0],[0.0,0.0]]] # 3d array (y,z,t)
+               [[0.0,0.0],[0.0,0.0]]] # 3d array
         x,y,z = get_vert_loc(i,j,k);
         phi[0][0][0] = get_phi_from_plic(x,y,z,iuw,juw,kuw)
         phi[1][0][0] = get_phi_from_plic(x+dx,y,z,iuw,juw,kuw)
@@ -139,7 +140,6 @@ def compute_DC():
         #calculate the volume fraction of the space-time volume
         vf = calc_vol_frac(phi)
         DCz[i,j,k] = vf*W[i,j,k]*dx*dy*dt
-
 
 
 @ti.func
@@ -216,14 +216,6 @@ def get_upwind_z(i,j,k):
           umax = sgn*W[i+di,j+dj,kup]
   """
   return iup,jup,kup
-
-
-@ti.func
-def backtrack_dmc(x,y,z,i,j,k,dt):
-  x_dmc = x-Vel_vert_dmc[i,j,k][0]*dt
-  y_dmc = y-Vel_vert_dmc[i,j,k][1]*dt
-  z_dmc = z-Vel_vert_dmc[i,j,k][2]*dt
-  return x_dmc, y_dmc, z_dmc
 
 @ti.func
 def sort_four(A):
@@ -342,22 +334,22 @@ def calc_vol_frac_b(phi):
 
   # choose the integration order by sorting the distances, max to min
   # swap data
-  order = [0,1,2]
+  order = ti.Vector([0,1,2])
   if l[0] < l[1]:
-    order[0],order[1] = order[1],order[0]
-    l[0],l[1] = l[1],l[0]
-    Bx,By = By,Bx
-    Bxz,Byz = Byz,Bxz
+    order[0],order[1] = swap(order[0],order[1])
+    l[0],l[1] = swap(l[0],l[1])
+    Bx,By = swap(Bx,By)
+    Bxz,Byz = swap(Bxz,Byz)
   if l[1] < l[2]:
-    order[1],order[2] = order[2],order[1]
-    l[1],l[2] = l[2],l[1]
-    Bz,By = By,Bz
-    Bxy,Bxz = Bxz,Bxy
+    order[1],order[2] = swap(order[2],order[1])
+    l[1],l[2] = swap(l[1],l[2])
+    By,Bz = swap(By,Bz)
+    Bxy,Bxz = swap(Bxy,Bxz)
   if l[0] < l[1]:
-    order[0],order[1] = order[1],order[0]
-    l[0],l[1] = l[1],l[0]
-    Bx,By = By,Bx
-    Bxz,Byz = Byz,Bxz
+    order[0],order[1] = swap(order[0],order[1])
+    l[0],l[1] = swap(l[0],l[1])
+    Bx,By = swap(Bx,By)
+    Bxz,Byz = swap(Bxz,Byz)
 
   # 3 point 2d gaussian quadrature of z
   xq = [-np.sqrt(3.0/5.0), 0, np.sqrt(3.0/5.0)]; # quadrature points
@@ -371,11 +363,12 @@ def calc_vol_frac_b(phi):
     # y integration bounds depends on x
     y1 = -((Bxz*z0 + Bx)*x + Bz*z0 + B) / ((Bxyz*z0 + Bxy)*x + Byz*z0 + By + small)
     if y1 < 0.0 or y1 > 1.0:
+      # when there is no sensical y bound
       y1 = 1.0
     Jy = y1/2.0
     for j in ti.static(range(3)):
       y = (xq[j]+1.0)*Jy
-      z = -((Bxy*y + Bx)*x + By*y + B) / ((Bxyz*y + Bxz)*x + Byz*y + Bz + small)  # z location of interface
+      z = -((Bxy*y + Bx)*x + By*y + B) / ((Bxyz*y + Bxz)*x + Byz*y + Bz)  # z location of interface
       vf+= z*wq[i]*wq[j]*Jx*Jy
 
   if phi[0][0][0] < 0.0:
@@ -563,6 +556,6 @@ def compute_DC_bounding():
 def update_C_bounding():
   for i,j,k in Flags:
     if is_active_cell(i,j,k):
-      C[i,j,k] = C[i,j,k] + 1.0/vol*(DCx_b[i,j,k] - DCx_b[i+1,j,k] \
-                          + DCy_b[i,j,k] - DCy_b[i,j+1,k] \
-                          + DCz_b[i,j,k] - DCz_b[i,j,k+1])
+      C[i,j,k] = C[i,j,k] + 1.0/vol*(DCx_b[i,j,k] + DCx_b[i+1,j,k] \
+                          + DCy_b[i,j,k] + DCy_b[i,j+1,k] \
+                          + DCz_b[i,j,k] + DCz_b[i,j,k+1])
