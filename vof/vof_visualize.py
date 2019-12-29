@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 from vof_data import *
-from vof_common import *
+from vof_util import *
 
 
 @ti.func
@@ -94,6 +94,9 @@ def write_M_png(n):
   img2 = np.flipud(img2)
   img3 = np.transpose(img3)
   img3 = np.flipud(img3)
+
+  plot_interfaces()
+
   cv2.imwrite("output/Mx"+str(n)+".png", img1 * 255)
   cv2.imwrite("output/My"+str(n)+".png", img2 * 255)
   cv2.imwrite("output/Mz"+str(n)+".png", img3 * 255)

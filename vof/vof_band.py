@@ -1,5 +1,5 @@
 from vof_data import *
-from vof_common import *
+from vof_util import *
 
 @ti.kernel
 def copy_to_temp():

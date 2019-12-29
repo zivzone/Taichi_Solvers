@@ -8,7 +8,7 @@ from vof_visualize import *
 def main():
   initialize()
   write_C_png(0)
-  for i in range(4):
+  for i in range(1):
     # update the narrow band
     copy_to_temp()
     clear_data()
@@ -23,11 +23,12 @@ def main():
     interp_face_velocity_to_vertex()
     Dt[None] = .5*dx
     back_track_DMC()
-    compute_DC()
-    update_C()
+    #compute_DC()
+    #update_C()
     #zero_DC_bounding()
     #compute_DC_bounding()
     #update_C_bounding()
+    clamp_C()
 
     write_band_png(i+1)
     write_C_png(i+1)

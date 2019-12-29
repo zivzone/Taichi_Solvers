@@ -1,5 +1,5 @@
 from vof_data import *
-from vof_common import *
+from vof_util import *
 
 @ti.kernel
 def init_blocks():
@@ -102,45 +102,6 @@ else:
 
 
 @ti.func
-def estimate_C(phi,grad_phi):
-  # estimate volume fraction of cell using level set and its gradient
-  phim = -ti.abs(phi)
-
-  abs_grad_phi = [0.0,0.0,0.0]
-  abs_grad_phi[0] = ti.abs(grad_phi[0])
-  abs_grad_phi[1] = ti.abs(grad_phi[1])
-  abs_grad_phi[2] = ti.abs(grad_phi[2])
-  dxi   = ti.max(abs_grad_phi[0],ti.max(abs_grad_phi[1],abs_grad_phi[2]))
-  dzeta = ti.min(abs_grad_phi[0],ti.min(abs_grad_phi[1],abs_grad_phi[2]))
-  deta  = abs_grad_phi[0] + abs_grad_phi[1] + abs_grad_phi[2] - dxi - dzeta
-
-  a = ti.max(phim + 0.5 * ( dxi + deta + dzeta), 0.0);
-  b = ti.max(phim + 0.5 * ( dxi + deta - dzeta), 0.0);
-  c = ti.max(phim + 0.5 * ( dxi - deta + dzeta), 0.0);
-  d = ti.max(phim + 0.5 * (-dxi + deta + dzeta), 0.0);
-  e = ti.max(phim + 0.5 * ( dxi - deta - dzeta), 0.0);
-  vol = 0.0
-  if dxi > Czero :
-    if deta > Czero :
-      if dzeta > Czero : #  3D
-        vol = (a*a*a - b*b*b - c*c*c - d*d*d + e*e*e)/(6.0*dxi*deta*dzeta)
-      else:#  2D
-        vol = (a*a - c*c)/(2.0*dxi*deta)
-    else: #  1D
-      vol = a/dxi
-  else:  #  0D
-    if phim !=  0.0:
-      vol = 0.0
-    else:
-      vol = 0.5
-
-  if phi > 0.0 :
-    vol = 1.0 - vol
-
-  return vol
-
-
-@ti.func
 def init_C(x,y,z):
   # split cell into subcells and estimate volume fraction of each, then sum
   vol = 0.0
@@ -159,7 +120,7 @@ def init_C(x,y,z):
         grad_phi[0] = 0.5*(get_phi(xc+dxc, yc, zc)-get_phi(xc-dxc, yc, zc))
         grad_phi[1] = 0.5*(get_phi(xc, yc+dyc, zc)-get_phi(xc, yc-dyc, zc))
         grad_phi[2] = 0.5*(get_phi(xc, yc, zc+dzc)-get_phi(xc, yc, zc-dzc))
-        vol = vol + estimate_C(phi,grad_phi)/(n*n*n)
+        vol = vol + calc_vol_frac_old(phi,grad_phi)/(n*n*n)
 
   return vol
 

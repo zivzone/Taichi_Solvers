@@ -1,16 +1,17 @@
 from vof_data import *
-from vof_common import *
+from vof_util import *
 
 @ti.kernel
 def reconstruct_plic():
   for i,j,k in Flags:
     if is_internal_cell(i,j,k) and is_interface_cell(i,j,k):
       mx,my,mz,alpha = recon(i,j,k)
-      #transform normal vector into physical space
+      #transform normal vector and alpha into physical space
       dlen = np.sqrt(dx*dx+dy*dy+dz*dz)
-      M[i,j,k][0] = ti.abs(mx)/dx*dlen
-      M[i,j,k][1] = ti.abs(my)/dy*dlen
-      M[i,j,k][2] = ti.abs(mz)/dz*dlen
+      M[i,j,k][0] = mx/dx*dlen
+      M[i,j,k][1] = my/dy*dlen
+      M[i,j,k][2] = mz/dz*dlen
+      alpha = alpha + min(0.0,mx) + min(0.0,my) + min(0.0,mz)
       Alpha[i,j,k] = alpha*dlen
 
 
@@ -33,13 +34,13 @@ def calc_C(alpha, m):
     m3 = ti.max(ti.max(mx,my),small)
     m2 = mz*1.0
     if (m2 < m1):
-      tmp = m1*1.0
-      m1 = m2*1.0
-      m2 = tmp*1.0
+      tmp = m1
+      m1 = m2
+      m2 = tmp
     elif (m2 > m3):
-      tmp = m3*1.0
-      m3 = m2*1.0
-      m2 = tmp*1.0
+      tmp = m3
+      m3 = m2
+      m2 = tmp
 
     m12 = m1 + m2
     mm  = ti.min(m12,m3)
@@ -82,25 +83,25 @@ def my_cbrt(n):
   root = 1.0
   if n>1.0:
     a = 0.0
-    b = n*1.0
+    b = n
     root = (a+b)/2.0
     while (root*root*root-n >small or iter < 100):
       root = (a+b)/2.0
       if root*root*root<n:
-        a = root*1.0
+        a = root
       else:
-        b = root*1.0
+        b = root
       iter = iter + 1
   elif n<1.0:
     a = 1.0
-    b = n*1.0
+    b = n
     root = (a+b)/2.0
     while (root*root*root-n > small or iter < 100):
       root = (a+b)/2.0
       if root*root*root>n:
-        a = root*1.0
+        a = root
       else:
-        b = root*1.0
+        b = root
       iter = iter + 1
 
   return root
@@ -239,8 +240,8 @@ def ELVIRA(i, j, k):
       error = calc_lsq_vof_error(alp,n,i,j,k)
 
       if (error < errorMin):
-        errorMin = error*1.0
-        alpha = alp*1.0
+        errorMin = error
+        alpha = alp
         m[0] = n[0]
         m[1] = n[1]
         m[2] = n[2]
@@ -289,8 +290,8 @@ def ELVIRA(i, j, k):
       error = calc_lsq_vof_error(alp,n,i,j,k)
 
       if (error < errorMin):
-        errorMin = error*1.0
-        alpha = alp*1.0
+        errorMin = error
+        alpha = alp
         m[0] = n[0]
         m[1] = n[1]
         m[2] = n[2]
@@ -326,6 +327,7 @@ def ELVIRA(i, j, k):
       else:
         n[1] = hyf
 
+      n[2] = 1.0
       if ((C[i,j,k+1] - C[i,j,k-1]) < 0.0):
         n[2] = -1.0
 
@@ -338,8 +340,8 @@ def ELVIRA(i, j, k):
       error = calc_lsq_vof_error(alp,n,i,j,k)
 
       if (error < errorMin):
-        errorMin = error*1.0
-        alpha = alp*1.0
+        errorMin = error
+        alpha = alp
         m[0] = n[0]
         m[1] = n[1]
         m[2] = n[2]
