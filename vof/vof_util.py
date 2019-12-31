@@ -88,8 +88,8 @@ def get_vel_vortex_in_a_box(x,y,z):
 
 @ti.func
 def get_vel_transport(x,y,z):
-  u =  1.0
-  v =  0.0
+  u =  .5
+  v =  .5
   w =  0.0
   return u,v,w
 
@@ -443,21 +443,21 @@ def calc_vol_frac_old(phi,grad_phi):
 ## cell identifier functions
 @ti.func
 def is_internal_cell(i,j,k):
-  return (i>nx_ext-1 and i<nx_tot-nx_ext \
-    and j>ny_ext-1 and j<ny_tot-ny_ext \
-    and k>nz_ext-1 and k<nz_tot-nz_ext)
+  return (i>=nx_ext and i<nx_tot-nx_ext \
+    and j>=ny_ext and j<ny_tot-ny_ext \
+    and k>=nz_ext and k<nz_tot-nz_ext)
 
 def is_ghost_cell(i,j,k):
-  return (i>nx_ext-1-n_ghost and i<nx_tot-nx_ext+n_ghost \
-    and j>ny_ext-1-n_ghost and j<ny_tot-ny_ext+n_ghost \
-    and k>nz_ext-1-n_ghost and k<nz_tot-nz_ext+n_ghost) \
-    and not is_internal_cell(i,j,k)
+  return is_internal_cell(i,j,k)!= True #(i>nx_ext-1-n_ghost and i<nx_tot-nx_ext+n_ghost \
+    #and j>ny_ext-1-n_ghost and j<ny_tot-ny_ext+n_ghost \
+    #and k>nz_ext-1-n_ghost and k<nz_tot-nz_ext+n_ghost) \
+    #and not is_internal_cell(i,j,k)
 
 @ti.func
 def is_internal_vertex(i,j,k):
-  return (i>nx_ext-1 and i<nx_tot-nx_ext+1 \
-    and j>ny_ext-1 and j<ny_tot-ny_ext+1 \
-    and k>nz_ext-1  and k<nz_tot-nz_ext+1)
+  return (i>=nx_ext and i<nx_tot-nx_ext+1 \
+    and j>=ny_ext and j<ny_tot-ny_ext+1 \
+    and k>=nz_ext  and k<nz_tot-nz_ext+1)
 
 @ti.func
 def is_ghost_vertex(i,j,k):

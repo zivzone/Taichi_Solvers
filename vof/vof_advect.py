@@ -26,9 +26,9 @@ def back_track_DMC():
         a = -(Vel_vert[i,j,k][0] - Vel_vert[i+1,j,k][0])/dx
 
       if ti.abs(a) <= small:
-        Vert_pos[i,j,k][0] = x - dt*Vel_vert[i,j,k][0]
+        Vert_loc[i,j,k][0] = x - dt*Vel_vert[i,j,k][0]
       else:
-        Vert_pos[i,j,k][0] = x - (1.0-ti.exp(-a*dt))*Vel_vert[i,j,k][0]/a
+        Vert_loc[i,j,k][0] = x - (1.0-ti.exp(-a*dt))*Vel_vert[i,j,k][0]/a
 
       # y-direction
       if Vel_vert[i,j,k][1] <= 0:
@@ -37,9 +37,9 @@ def back_track_DMC():
         a = -(Vel_vert[i,j,k][1] - Vel_vert[i,j+1,k][1])/dy
 
       if ti.abs(a) <= small:
-        Vert_pos[i,j,k][1] = y - dt*Vel_vert[i,j,k][0]
+        Vert_loc[i,j,k][1] = y - dt*Vel_vert[i,j,k][1]
       else:
-        Vert_pos[i,j,k][1] = y - (1.0-ti.exp(-a*dt))*Vel_vert[i,j,k][1]/a
+        Vert_loc[i,j,k][1] = y - (1.0-ti.exp(-a*dt))*Vel_vert[i,j,k][1]/a
 
       # z-direction
       if Vel_vert[i,j,k][2] <= 0:
@@ -48,9 +48,9 @@ def back_track_DMC():
         a = -(Vel_vert[i,j,k][2] - Vel_vert[i,j,k+1][2])/dz
 
       if ti.abs(a) <= small:
-        Vert_pos[i,j,k][2] = z - dt*Vel_vert[i,j,k][2]
+        Vert_loc[i,j,k][2] = z - dt*Vel_vert[i,j,k][2]
       else:
-        Vert_pos[i,j,k][2] = z - (1.0-ti.exp(-a*dt))*Vel_vert[i,j,k][2]/a
+        Vert_loc[i,j,k][2] = z - (1.0-ti.exp(-a*dt))*Vel_vert[i,j,k][2]/a
 
 
 @ti.kernel
@@ -58,6 +58,7 @@ def compute_DC():
   # compute volume fraction fluxes using an isoadvector-like algorithm,
   # ie. the "time integral of the submerged face area"
   for i,j,k in Flags:
+    dt = Dt[None]
     # flux the left face
     if is_internal_x_face(i,j,k) and is_active_x_face(i,j,k):
       # find the "upwind" interface cell
@@ -76,10 +77,10 @@ def compute_DC():
         phi[1][1][0] = get_phi_from_plic(x,y+dy,z+dz,iuw,juw,kuw)
 
         # compute the level set at the DMC backtracked vertices
-        phi[0][0][1] = get_phi_from_plic(Vert_pos[i,j,k][0],Vert_pos[i,j,k][1],Vert_pos[i,j,k][2],iuw,juw,kuw)
-        phi[1][0][1] = get_phi_from_plic(Vert_pos[i,j+1,k][0],Vert_pos[i,j+1,k][1],Vert_pos[i,j+1,k][2],iuw,juw,kuw)
-        phi[0][1][1] = get_phi_from_plic(Vert_pos[i,j,k+1][0],Vert_pos[i,j,k+1][1],Vert_pos[i,j,k+1][2],iuw,juw,kuw)
-        phi[1][1][1] = get_phi_from_plic(Vert_pos[i,j+1,k+1][0],Vert_pos[i,j+1,k+1][1],Vert_pos[i,j+1,k+1][2],iuw,juw,kuw)
+        phi[0][0][1] = get_phi_from_plic(Vert_loc[i,j,k][0],Vert_loc[i,j,k][1],Vert_loc[i,j,k][2],iuw,juw,kuw)
+        phi[1][0][1] = get_phi_from_plic(Vert_loc[i,j+1,k][0],Vert_loc[i,j+1,k][1],Vert_loc[i,j+1,k][2],iuw,juw,kuw)
+        phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j,k+1][0],Vert_loc[i,j,k+1][1],Vert_loc[i,j,k+1][2],iuw,juw,kuw)
+        phi[1][1][1] = get_phi_from_plic(Vert_loc[i,j+1,k+1][0],Vert_loc[i,j+1,k+1][1],Vert_loc[i,j+1,k+1][2],iuw,juw,kuw)
 
         #calculate the volume fraction of the space-time volume
         vf = calc_vol_frac(phi)
@@ -103,10 +104,10 @@ def compute_DC():
         phi[1][1][0] = get_phi_from_plic(x+dx,y,z+dz,iuw,juw,kuw)
 
         # compute the level set at the lagrangian backtracked vertices
-        phi[0][0][1] = get_phi_from_plic(Vert_pos[i,j,k][0],Vert_pos[i,j,k][1],Vert_pos[i,j,k][2],iuw,juw,kuw)
-        phi[1][0][1] = get_phi_from_plic(Vert_pos[i+1,j,k][0],Vert_pos[i+1,j,k][1],Vert_pos[i+1,j,k][2],iuw,juw,kuw)
-        phi[0][1][1] = get_phi_from_plic(Vert_pos[i,j,k+1][0],Vert_pos[i,j,k+1][1],Vert_pos[i,j,k+1][2],iuw,juw,kuw)
-        phi[1][1][1] = get_phi_from_plic(Vert_pos[i+1,j,k+1][0],Vert_pos[i+1,j,k+1][1],Vert_pos[i+1,j,k+1][2],iuw,juw,kuw)
+        phi[0][0][1] = get_phi_from_plic(Vert_loc[i,j,k][0],Vert_loc[i,j,k][1],Vert_loc[i,j,k][2],iuw,juw,kuw)
+        phi[1][0][1] = get_phi_from_plic(Vert_loc[i+1,j,k][0],Vert_loc[i+1,j,k][1],Vert_loc[i+1,j,k][2],iuw,juw,kuw)
+        phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j,k+1][0],Vert_loc[i,j,k+1][1],Vert_loc[i,j,k+1][2],iuw,juw,kuw)
+        phi[1][1][1] = get_phi_from_plic(Vert_loc[i+1,j,k+1][0],Vert_loc[i+1,j,k+1][1],Vert_loc[i+1,j,k+1][2],iuw,juw,kuw)
 
         #calculate the volume fraction of the space-time volume
         vf = calc_vol_frac(phi)
@@ -130,10 +131,10 @@ def compute_DC():
         phi[1][1][0] = get_phi_from_plic(x+dx,y+dy,z,iuw,juw,kuw)
 
         # compute the level set at the lagrangian backtracked vertices
-        phi[0][0][1] = get_phi_from_plic(Vert_pos[i,j,k][0],Vert_pos[i,j,k][1],Vert_pos[i,j,k][2],iuw,juw,kuw)
-        phi[1][0][1] = get_phi_from_plic(Vert_pos[i+1,j,k][0],Vert_pos[i+1,j,k][1],Vert_pos[i+1,j,k][2],iuw,juw,kuw)
-        phi[0][1][1] = get_phi_from_plic(Vert_pos[i,j+1,k][0],Vert_pos[i,j+1,k][1],Vert_pos[i,j+1,k][2],iuw,juw,kuw)
-        phi[1][1][1] = get_phi_from_plic(Vert_pos[i+1,j+1,k][0],Vert_pos[i+1,j+1,k][1],Vert_pos[i+1,j+1,k][2],iuw,juw,kuw)
+        phi[0][0][1] = get_phi_from_plic(Vert_loc[i,j,k][0],Vert_loc[i,j,k][1],Vert_loc[i,j,k][2],iuw,juw,kuw)
+        phi[1][0][1] = get_phi_from_plic(Vert_loc[i+1,j,k][0],Vert_loc[i+1,j,k][1],Vert_loc[i+1,j,k][2],iuw,juw,kuw)
+        phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j+1,k][0],Vert_loc[i,j+1,k][1],Vert_loc[i,j+1,k][2],iuw,juw,kuw)
+        phi[1][1][1] = get_phi_from_plic(Vert_loc[i+1,j+1,k][0],Vert_loc[i+1,j+1,k][1],Vert_loc[i+1,j+1,k][2],iuw,juw,kuw)
 
         #calculate the volume fraction of the space-time volume
         vf = calc_vol_frac(phi)
@@ -298,9 +299,9 @@ def compute_DC_bounding():
 def update_C_bounding():
   for i,j,k in Flags:
     if is_active_cell(i,j,k):
-      C[i,j,k] = C[i,j,k] + 1.0/vol*(DCx_b[i,j,k] + DCx_b[i+1,j,k] \
-                          + DCy_b[i,j,k] + DCy_b[i,j+1,k] \
-                          + DCz_b[i,j,k] + DCz_b[i,j,k+1])
+      C[i,j,k] = C[i,j,k] + 1.0/vol*(DCx_b[i,j,k] - DCx_b[i+1,j,k] \
+                          + DCy_b[i,j,k] - DCy_b[i,j+1,k] \
+                          + DCz_b[i,j,k] - DCz_b[i,j,k+1])
 @ti.kernel
 def clamp_C():
   for i,j,k in Flags:

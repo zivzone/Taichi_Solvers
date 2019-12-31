@@ -7,7 +7,7 @@ def reconstruct_plic():
     if is_internal_cell(i,j,k) and is_interface_cell(i,j,k):
       mx,my,mz,alpha = recon(i,j,k)
       #transform normal vector and alpha into physical space
-      dlen = np.sqrt(dx*dx+dy*dy+dz*dz)
+      dlen = dx+dy+dz
       M[i,j,k][0] = mx/dx*dlen
       M[i,j,k][1] = my/dy*dlen
       M[i,j,k][2] = mz/dz*dlen

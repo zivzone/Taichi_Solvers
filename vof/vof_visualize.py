@@ -14,7 +14,7 @@ def subtract_ext(i,j):
 def band_to_img(img: ti.ext_arr()):
   for i,j,k in Flags:
     if is_internal_cell(i,j,k):
-      if k == nz_ext+1:
+      if k == nz_ext+3:
         ii,jj = subtract_ext(i,j)
         if is_interface_cell(i,j,k):
           img[ii,jj] = 1.0
@@ -29,7 +29,7 @@ def band_to_img(img: ti.ext_arr()):
 def Flag_to_img(img: ti.ext_arr(), flag: ti.i32):
   for i,j,k in Flags:
     if is_internal_cell(i,j,k):
-      if k == nz_ext+1:
+      if k == nz_ext+3:
         ii,jj = subtract_ext(i,j)
         if Flags[i,j,k]&flag==flag:
           img[ii,jj] = 1.0
@@ -40,7 +40,7 @@ def C_to_img(img: ti.ext_arr()):
   for i,j,k in Flags:
     if is_internal_cell(i,j,k):
       ii,jj = subtract_ext(i,j)
-      if k == nz_ext+1:
+      if k == nz_ext+3:
         img[ii,jj] = ti.cast(C[i,j,k],ti.f32)
 
 
@@ -49,7 +49,7 @@ def M_to_img(img1: ti.ext_arr(), img2: ti.ext_arr(), img3: ti.ext_arr()):
   for i,j,k in Flags:
     if is_internal_cell(i,j,k):
       ii,jj = subtract_ext(i,j)
-      if k == nz_ext+1:
+      if k == nz_ext+3:
         img1[ii,jj] = .5*ti.cast(M[i,j,k][0],ti.f32)+.5
         img2[ii,jj] = .5*ti.cast(M[i,j,k][1],ti.f32)+.5
         img3[ii,jj] = .5*ti.cast(M[i,j,k][2],ti.f32)+.5
@@ -95,7 +95,7 @@ def write_M_png(n):
   img3 = np.transpose(img3)
   img3 = np.flipud(img3)
 
-  plot_interfaces()
+  #plot_interfaces()
 
   cv2.imwrite("output/Mx"+str(n)+".png", img1 * 255)
   cv2.imwrite("output/My"+str(n)+".png", img2 * 255)

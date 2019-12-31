@@ -10,25 +10,25 @@ ti.cfg.arch = ti.x86_64
 # ******************************************************************************
 
 # internel grid size
-nx = 128
-ny = 128
+nx = 256
+ny = 256
 nz = 4
 
 # domain dimensions
 wx = 64
 wy = 64
-wz = 4
+wz = 1
 
 b_size = 4
 sb_size = b_size*4
 n_init_subcells = 32
 
 # initial phi params
-init_phi = 0 # 0 = zalesaks disk, 1 = cylinder
-init_center = [32.1, 32.1 , 0.0]
-init_width = 6
-init_height = 10.22
-init_radius = 20.1117
+init_phi = 1 # 0 = zalesaks disk, 1 = cylinder
+init_center = [12.112, 12.232 , 0.0]
+init_width = 5.4543531
+init_height = 0.1223142
+init_radius = 10.11171
 init_plane_dir = [1.0, 0.0, 0.0]
 
 # some other constants
@@ -69,7 +69,7 @@ U = scalar()        # x velocity on left face
 V = scalar()        # y velocity on bottom face
 W = scalar()        # z velocity on back face
 Vel_vert = vector() # velocity vector on left/bottom/back vertex
-Vert_pos = vector() # position vector of DMC backtracked vertex
+Vert_loc = vector() # position vector of DMC backtracked vertex
 Phi = scalar()      # level set at cell center
 DCx = scalar()      # delta volume fraction on left face
 DCy = scalar()      # delta volume fraction on bottom face
@@ -84,18 +84,12 @@ C_temp = scalar()
 
 @ti.layout
 def data():
-  #block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).bitmasked()
-  #for f in [Flags, C, M, Alpha, U, V, W, Vel_vert, Vert_pos, Phi, DCx, DCy, DCz]:
-  #  block.dense(ti.ijk, b_size).place(f)
+  block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).bitmasked()
+  for f in [Flags, C, M, Alpha, U, V, W, Vel_vert, Vert_loc, Phi, DCx, DCy, DCz, DCx_b, DCy_b, DCz_b]:
+    block.dense(ti.ijk, b_size).place(f)
 
-  #block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).bitmasked()
-  #for f in [Flags_temp, C_temp]:
-  #  block.dense(ti.ijk, b_size).place(f)
-
-  ti.root.dense(ti.ijk, [nx_tot, ny_tot, nz_tot]) \
-  .place(Flags, C, M, Alpha, U, V, W, Vel_vert, Vert_pos, Phi, DCx, DCy, DCz, DCx_b, DCy_b, DCz_b)
-
-  ti.root.dense(ti.ijk, [nx_tot, ny_tot, nz_tot]) \
-  .place(Flags_temp, C_temp)
+  block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).bitmasked()
+  for f in [Flags_temp, C_temp]:
+    block.dense(ti.ijk, b_size).place(f)
 
   ti.root.place(Dt)
