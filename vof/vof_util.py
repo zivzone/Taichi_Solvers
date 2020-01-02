@@ -1,6 +1,5 @@
 from enum import IntFlag, auto
 import numpy as np
-import matplotlib.pyplot as plt
 from vof_data import *
 
 @ti.func
@@ -36,39 +35,6 @@ def get_vert_loc(i,j,k):
   return x,y,z
 
 
-## plotting functions ##
-def plot_interfaces():
-  k = nz_ext
-  for j in range(ny_tot):
-    for i in range(nx_tot):
-      if abs(M[i,j,k][0]) > 100*small or abs(M[i,j,k][1]) > 100*small:
-        x,y,z = get_vert_loc(i,j,k)
-        if abs(M[i,j,k][0]) > abs(M[i,j,k][1]):
-          yl = np.array([y,y+dy])
-          if (M[i,j,k][0] > 0.0 and M[i,j,k][1] > 0.0) or (M[i,j,k][0] < 0.0 and M[i,j,k][1] < 0.0):
-            yl[0] = max(yl[0],-(M[i,j,k][0]*dx-Alpha[i,j,k])/M[i,j,k][1] + y)
-            yl[1] = min(yl[1],-(M[i,j,k][0]*0.0-Alpha[i,j,k])/M[i,j,k][1] + y)
-          if (M[i,j,k][0] > 0.0 and M[i,j,k][1] < 0.0) or (M[i,j,k][0] < 0.0 and M[i,j,k][1] > 0.0):
-            yl[0] = max(yl[0],-(M[i,j,k][0]*0.0-Alpha[i,j,k])/M[i,j,k][1] + y)
-            yl[1] = min(yl[1],-(M[i,j,k][0]*dx-Alpha[i,j,k])/M[i,j,k][1] + y)
-          xl = -(M[i,j,k][1]*(yl-y) - Alpha[i,j,k])/M[i,j,k][0] + x
-          plt.plot(xl,yl)
-        else:
-          xl = np.array([x,x+dx])
-          if (M[i,j,k][0] > 0.0 and M[i,j,k][1] > 0.0) or (M[i,j,k][0] < 0.0 and M[i,j,k][1] < 0.0):
-            xl[0] = max(xl[0],-(M[i,j,k][1]*dy - Alpha[i,j,k])/M[i,j,k][0] + x)
-            xl[1] = min(xl[1],-(M[i,j,k][1]*0.0 - Alpha[i,j,k])/M[i,j,k][0] + x)
-          if (M[i,j,k][0] > 0.0 and M[i,j,k][1] < 0.0) or (M[i,j,k][0] < 0.0 and M[i,j,k][1] > 0.0):
-            xl[0] = max(xl[0],-(M[i,j,k][1]*0.0 - Alpha[i,j,k])/M[i,j,k][0] + x)
-            xl[1] = min(xl[1],-(M[i,j,k][1]*dy - Alpha[i,j,k])/M[i,j,k][0] + x)
-          yl = -(M[i,j,k][0]*(xl-x) - Alpha[i,j,k])/M[i,j,k][1] + y
-          plt.plot(xl,yl)
-  plt.grid(color='k', linestyle='-', linewidth=.25)
-  plt.xticks(np.arange(0, wx, wx/nx))
-  plt.yticks(np.arange(0, wy, wy/ny))
-  plt.axis([0, wx, 0, wy])
-  plt.show()
-
 ## get_velocity functions ##
 @ti.func
 def get_vel_solid_body_rotation(x,y,z):
@@ -88,8 +54,8 @@ def get_vel_vortex_in_a_box(x,y,z):
 
 @ti.func
 def get_vel_transport(x,y,z):
-  u =  .5
-  v =  .5
+  u =  1.0
+  v =  0.0
   w =  0.0
   return u,v,w
 
@@ -113,13 +79,54 @@ def get_phi_from_plic(x,y,z,i,j,k):
   # phi is distance fromm plic plane
   # loc relative to interface cell origin
   x0,y0,z0 = get_vert_loc(i,j,k)
-  x = x-x0
-  y = y-y0
-  z = z-z0
+  xt = x-x0
+  yt = y-y0
+  zt = z-z0
 
   # phi is distance from plic plane
-  phi = -(M[i,j,k][0]*x + M[i,j,k][1]*y + M[i,j,k][2]*z - Alpha[i,j,k]) \
-  /ti.sqrt(M[i,j,k][0]*M[i,j,k][0] + M[i,j,k][1]*M[i,j,k][1] + M[i,j,k][2]*M[i,j,k][2])
+  phi = -(M[i,j,k][0]*xt + M[i,j,k][1]*yt + M[i,j,k][2]*zt - Alpha[i,j,k]) #\
+  #/ti.sqrt(M[i,j,k][0]*M[i,j,k][0] + M[i,j,k][1]*M[i,j,k][1] + M[i,j,k][2]*M[i,j,k][2])
+  return phi
+
+@ti.func
+def get_phi_from_plic_smooth(x,y,z,i,j,k):
+  # get the "smoothed" distance from plic plane
+  # ref: 'Single-step reinitialization and extending algorithms for
+  # level-set based multi-phase flow simulations'
+
+  # loc relative to interface cell origin
+  x0,y0,z0 = get_vert_loc(i,j,k)
+  xt = x-x0
+  yt = y-y0
+  zt = z-z0
+
+  # interface cell center
+  xc = dx/2.0
+  yc = dy/2.0
+  zc = dz/2.0
+
+  #compute the interface point
+  phi_c =  -(M[i,j,k][0]*xc + M[i,j,k][1]*yc + M[i,j,k][2]*zc - Alpha[i,j,k]) # M is normalized to length of 1
+  xint = xc+phi_c*M[i,j,k][0]
+  yint = yc+phi_c*M[i,j,k][1]
+  zint = zc+phi_c*M[i,j,k][2]
+
+  # signed distance of interface patch to target point
+  d = -(M[i,j,k][0]*xt + M[i,j,k][1]*yt + M[i,j,k][2]*zt - Alpha[i,j,k]) # M is normalized to length of 1
+
+  # signed distance from interface point to target point
+  r = ti.sqrt((xint-xt)*(xint-xt)+(yint-yt)*(yint-yt)+(zint-zt)*(zint-zt))
+  if d < 0.0: r = -r
+
+  #misalignment length between ray cast from interface point to target point
+  h = abs(r*r-d*d)
+
+  # blend d and h with wendland function
+  delta = np.sqrt(dx*dx+dy*dy+dz*dz)
+  zeta = min(h/(3.0*delta),1.0)
+  beta = (1.0-zeta)**6 * (1.0 + 6.0*zeta + 35.0/3.0*zeta**2)
+
+  phi = beta*d + (1.0-beta)*r
   return phi
 
 
@@ -130,6 +137,7 @@ def clear_data():
     Flags[i,j,k] = 0
     C[i,j,k] = 0.0
     M[i,j,k] = [0.0, 0.0, 0.0]
+    Phi[i,j,k] = 0.0
 
 
 @ti.kernel
@@ -310,6 +318,8 @@ def calc_vol_frac_b(phi):
 def calc_vol_frac(phi):
   # compute the volume fraction from level set at vertices
   # by splitting the cell into elementary cases then using gaussian quadrature
+  # ref: 'A consistent analytical formulation for volume-estimation of geometries enclosed by
+  # implicitly defined surfaces'
   vf = 0.0
 
   all_neg,all_pos = all_sign(phi)
@@ -403,7 +413,7 @@ def calc_vol_frac(phi):
   return vf
 
 @ti.func
-def calc_vol_frac_old(phi,grad_phi):
+def calc_vol_frac_simple(phi,grad_phi):
   # estimate volume fraction of cell using level set and its gradient
   phim = -ti.abs(phi)
 
@@ -420,25 +430,25 @@ def calc_vol_frac_old(phi,grad_phi):
   c = ti.max(phim + 0.5 * ( dxi - deta + dzeta), 0.0);
   d = ti.max(phim + 0.5 * (-dxi + deta + dzeta), 0.0);
   e = ti.max(phim + 0.5 * ( dxi - deta - dzeta), 0.0);
-  vol = 0.0
+  vf = 0.0
   if dxi > Czero :
     if deta > Czero :
       if dzeta > Czero : #  3D
-        vol = (a*a*a - b*b*b - c*c*c - d*d*d + e*e*e)/(6.0*dxi*deta*dzeta)
+        vf = (a*a*a - b*b*b - c*c*c - d*d*d + e*e*e)/(6.0*dxi*deta*dzeta)
       else:#  2D
-        vol = (a*a - c*c)/(2.0*dxi*deta)
+        vf = (a*a - c*c)/(2.0*dxi*deta)
     else: #  1D
-      vol = a/dxi
+      vf = a/dxi
   else:  #  0D
     if phim !=  0.0:
-      vol = 0.0
+      vf = 0.0
     else:
-      vol = 0.5
+      vf = 0.5
 
   if phi > 0.0 :
-    vol = 1.0 - vol
+    vf = 1.0 - vf
 
-  return vol
+  return vf
 
 ## cell identifier functions
 @ti.func

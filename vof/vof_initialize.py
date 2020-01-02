@@ -17,6 +17,7 @@ def init_cells():
   for i,j,k in Flags:
     x,y,z = get_cell_loc(i,j,k)
     phi = get_phi(x,y,z)
+    Phi[i,j,k] = phi
     if ti.abs(phi) <= np.sqrt(dx*dx + dy*dy + dz*dz):
       C[i,j,k] = init_C(x,y,z)
       Flags[i,j,k] = flag_enum.CELL_ACTIVE
@@ -120,7 +121,7 @@ def init_C(x,y,z):
         grad_phi[0] = 0.5*(get_phi(xc+dxc, yc, zc)-get_phi(xc-dxc, yc, zc))
         grad_phi[1] = 0.5*(get_phi(xc, yc+dyc, zc)-get_phi(xc, yc-dyc, zc))
         grad_phi[2] = 0.5*(get_phi(xc, yc, zc+dzc)-get_phi(xc, yc, zc-dzc))
-        vol = vol + calc_vol_frac_old(phi,grad_phi)/(n*n*n)
+        vol = vol + calc_vol_frac_simple(phi,grad_phi)/(n*n*n)
 
   return vol
 

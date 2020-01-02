@@ -7,12 +7,25 @@ def reconstruct_plic():
     if is_internal_cell(i,j,k) and is_interface_cell(i,j,k):
       mx,my,mz,alpha = recon(i,j,k)
       #transform normal vector and alpha into physical space
-      dlen = dx+dy+dz
-      M[i,j,k][0] = mx/dx*dlen
-      M[i,j,k][1] = my/dy*dlen
-      M[i,j,k][2] = mz/dz*dlen
+      dlen = ti.sqrt(mx/dx*mx/dx+my/dy*my/dy+mz/dz*mz/dz)
+      M[i,j,k][0] = mx/(dx*dlen)
+      M[i,j,k][1] = my/(dy*dlen)
+      M[i,j,k][2] = mz/(dz*dlen)
       alpha = alpha + min(0.0,mx) + min(0.0,my) + min(0.0,mz)
-      Alpha[i,j,k] = alpha*dlen
+      Alpha[i,j,k] = alpha/dlen
+
+@ti.kernel
+def reconstruct_phi():
+  for i,j,k in Flags:
+    if is_active_cell(i,j,k) or is_buffer_cell(i,j,k):
+      Phi[i,j,k] = big
+      x,y,z = get_cell_loc(i,j,k)
+      for di,dj,dk in ti.ndrange((-2,3),(-2,3),(-2,3)):
+        if is_interface_cell(i+di,j+dj,k+dk):
+          phi = get_phi_from_plic(x,y,z,i+di,j+dj,k+dk)
+          if abs(phi) < abs(Phi[i,j,k]):
+            Phi[i,j,k] = phi
+
 
 
 @ti.func
@@ -85,7 +98,7 @@ def my_cbrt(n):
     a = 0.0
     b = n
     root = (a+b)/2.0
-    while (root*root*root-n >small or iter < 100):
+    while (root*root*root-n > small or iter < 10000):
       root = (a+b)/2.0
       if root*root*root<n:
         a = root
@@ -96,7 +109,7 @@ def my_cbrt(n):
     a = 1.0
     b = n
     root = (a+b)/2.0
-    while (root*root*root-n > small or iter < 100):
+    while (root*root*root-n > small or iter < 10000):
       root = (a+b)/2.0
       if root*root*root>n:
         a = root
@@ -339,12 +352,12 @@ def ELVIRA(i, j, k):
       alp = calc_alpha(C[i,j,k], n)
       error = calc_lsq_vof_error(alp,n,i,j,k)
 
-      if (error < errorMin):
-        errorMin = error
-        alpha = alp
-        m[0] = n[0]
-        m[1] = n[1]
-        m[2] = n[2]
+      #if (error < errorMin):
+      #  errorMin = error
+      #  alpha = alp
+      #  m[0] = n[0]
+      #  m[1] = n[1]
+      #  m[2] = n[2]
 
   return m[0], m[1], m[2], alpha
 

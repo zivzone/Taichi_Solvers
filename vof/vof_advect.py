@@ -14,6 +14,7 @@ def interp_face_velocity_to_vertex():
 @ti.kernel
 def back_track_DMC():
   # compute the Dual Mesh Characteristic backtracked vertex position
+  # ref 'Dual-Mesh Characteristics for Particle-Mesh Methods for the Simulation of Convection-Dominated Flows'
   for i,j,k in Flags:
     if is_internal_vertex(i,j,k):
       dt = Dt[None]
@@ -57,6 +58,7 @@ def back_track_DMC():
 def compute_DC():
   # compute volume fraction fluxes using an isoadvector-like algorithm,
   # ie. the "time integral of the submerged face area"
+  # ref: 'A Computational Method for Sharp Interface Advection'
   for i,j,k in Flags:
     dt = Dt[None]
     # flux the left face
@@ -82,8 +84,19 @@ def compute_DC():
         phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j,k+1][0],Vert_loc[i,j,k+1][1],Vert_loc[i,j,k+1][2],iuw,juw,kuw)
         phi[1][1][1] = get_phi_from_plic(Vert_loc[i,j+1,k+1][0],Vert_loc[i,j+1,k+1][1],Vert_loc[i,j+1,k+1][2],iuw,juw,kuw)
 
+        grad_phi  = [0.0,0.0,0.0]
+        phi_c = (phi[0][0][0]+phi[1][0][0]+phi[0][1][0]+phi[1][1][0] \
+              + phi[0][0][1]+phi[1][0][1]+phi[0][1][1]+phi[1][1][1])/8.0
+        grad_phi[0] = -(phi[0][0][0]-phi[1][0][0]+phi[0][1][0]-phi[1][1][0] \
+              + phi[0][0][1]-phi[1][0][1]+phi[0][1][1]-phi[1][1][1])/(4.0)
+        grad_phi[1] = -(phi[0][0][0]+phi[1][0][0]-phi[0][1][0]-phi[1][1][0] \
+              + phi[0][0][1]+phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/(4.0)
+        grad_phi[2] = -(phi[0][0][0]+phi[1][0][0]+phi[0][1][0]+phi[1][1][0] \
+              - phi[0][0][1]-phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/(4.0)
+
         #calculate the volume fraction of the space-time volume
-        vf = calc_vol_frac(phi)
+        #vf = calc_vol_frac(phi)
+        vf = calc_vol_frac_simple(phi_c,grad_phi)
         DCx[i,j,k] = vf*U[i,j,k]*dy*dz*dt
 
     # flux the bottom face
@@ -96,7 +109,7 @@ def compute_DC():
       if is_interface_cell(iuw,juw,kuw):
         # compute the level set at each vertex on this face at time t
         phi = [[[0.0,0.0],[0.0,0.0]],
-               [[0.0,0.0],[0.0,0.0]]] # 3d array (y,z,t)
+               [[0.0,0.0],[0.0,0.0]]] # 3d array (x,z,t)
         x,y,z = get_vert_loc(i,j,k);
         phi[0][0][0] = get_phi_from_plic(x,y,z,iuw,juw,kuw)
         phi[1][0][0] = get_phi_from_plic(x+dx,y,z,iuw,juw,kuw)
@@ -109,8 +122,19 @@ def compute_DC():
         phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j,k+1][0],Vert_loc[i,j,k+1][1],Vert_loc[i,j,k+1][2],iuw,juw,kuw)
         phi[1][1][1] = get_phi_from_plic(Vert_loc[i+1,j,k+1][0],Vert_loc[i+1,j,k+1][1],Vert_loc[i+1,j,k+1][2],iuw,juw,kuw)
 
+        grad_phi  = [0.0,0.0,0.0]
+        phi_c = (phi[0][0][0]+phi[1][0][0]+phi[0][1][0]+phi[1][1][0] \
+              + phi[0][0][1]+phi[1][0][1]+phi[0][1][1]+phi[1][1][1])/8.0
+        grad_phi[0] = -(phi[0][0][0]-phi[1][0][0]+phi[0][1][0]-phi[1][1][0] \
+              + phi[0][0][1]-phi[1][0][1]+phi[0][1][1]-phi[1][1][1])/(4.0)
+        grad_phi[1] = -(phi[0][0][0]+phi[1][0][0]-phi[0][1][0]-phi[1][1][0] \
+              + phi[0][0][1]+phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/(4.0)
+        grad_phi[2] = -(phi[0][0][0]+phi[1][0][0]+phi[0][1][0]+phi[1][1][0] \
+              - phi[0][0][1]-phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/(4.0)
+
         #calculate the volume fraction of the space-time volume
-        vf = calc_vol_frac(phi)
+        #vf = calc_vol_frac(phi)
+        vf = calc_vol_frac_simple(phi_c,grad_phi)
         DCy[i,j,k] = vf*V[i,j,k]*dx*dz*dt
 
     # flux the back face
@@ -137,7 +161,18 @@ def compute_DC():
         phi[1][1][1] = get_phi_from_plic(Vert_loc[i+1,j+1,k][0],Vert_loc[i+1,j+1,k][1],Vert_loc[i+1,j+1,k][2],iuw,juw,kuw)
 
         #calculate the volume fraction of the space-time volume
-        vf = calc_vol_frac(phi)
+        grad_phi  = [0.0,0.0,0.0]
+        phi_c = (phi[0][0][0]+phi[1][0][0]+phi[0][1][0]+phi[1][1][0] \
+              + phi[0][0][1]+phi[1][0][1]+phi[0][1][1]+phi[1][1][1])/8.0
+        grad_phi[0] = -(phi[0][0][0]-phi[1][0][0]+phi[0][1][0]-phi[1][1][0] \
+              + phi[0][0][1]-phi[1][0][1]+phi[0][1][1]-phi[1][1][1])/(4.0)
+        grad_phi[1] = -(phi[0][0][0]+phi[1][0][0]-phi[0][1][0]-phi[1][1][0] \
+              + phi[0][0][1]+phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/(4.0)
+        grad_phi[2] = -(phi[0][0][0]+phi[1][0][0]+phi[0][1][0]+phi[1][1][0] \
+              - phi[0][0][1]-phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/(4.0)
+
+        #vf = calc_vol_frac(phi)
+        vf = calc_vol_frac_simple(phi_c,grad_phi)
         DCz[i,j,k] = vf*W[i,j,k]*dx*dy*dt
 
 
@@ -305,5 +340,58 @@ def update_C_bounding():
 @ti.kernel
 def clamp_C():
   for i,j,k in Flags:
-    if is_active_cell(i,j,k):
-      C[i,j,k] = max(0.0, min(C[i,j,k],1.0))
+    if C[i,j,k] < Czero_cleanup:
+      C[i,j,k] = 0.0
+    if C[i,j,k] > Cone_cleanup:
+      C[i,j,k] = 1.0
+
+
+@ti.kernel
+def check_vof():
+  ti.serialize()
+  for i,j,k in Flags:
+    if is_interface_cell(i,j,k):
+      phi = [[[0.0,0.0],[0.0,0.0]],
+             [[0.0,0.0],[0.0,0.0]]] # 3d array (y,z,t)
+      x,y,z = get_vert_loc(i,j,k);
+      phi[0][0][0] = get_phi_from_plic(x,y,z,i,j,k)
+      phi[1][0][0] = get_phi_from_plic(x+dx,y,z,i,j,k)
+      phi[0][1][0] = get_phi_from_plic(x,y+dy,z,i,j,k)
+      phi[1][1][0] = get_phi_from_plic(x+dx,y+dy,z,i,j,k)
+      phi[0][0][1] = get_phi_from_plic(x,y,z+dz,i,j,k)
+      phi[1][0][1] = get_phi_from_plic(x+dx,y,z+dz,i,j,k)
+      phi[0][1][1] = get_phi_from_plic(x,y+dy,z+dz,i,j,k)
+      phi[1][1][1] = get_phi_from_plic(x+dx,y+dy,z+dz,i,j,k)
+
+      grad_phi  = [0.0,0.0,0.0]
+      phi_c = (phi[0][0][0]+phi[1][0][0]+phi[0][1][0]+phi[1][1][0] \
+            + phi[0][0][1]+phi[1][0][1]+phi[0][1][1]+phi[1][1][1])/8.0
+      grad_phi[0] = -(phi[0][0][0]-phi[1][0][0]+phi[0][1][0]-phi[1][1][0] \
+            + phi[0][0][1]-phi[1][0][1]+phi[0][1][1]-phi[1][1][1])/4.0
+      grad_phi[1] = -(phi[0][0][0]+phi[1][0][0]-phi[0][1][0]-phi[1][1][0] \
+            + phi[0][0][1]+phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/4.0
+      grad_phi[2] = -(phi[0][0][0]+phi[1][0][0]+phi[0][1][0]+phi[1][1][0] \
+            - phi[0][0][1]-phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/4.0
+
+      #calculate the volume fraction from phi
+      vf1 = calc_vol_frac(phi)
+      if abs(C[i,j,k]-vf1) > small:
+        print(vf1)
+        print(C[i,j,k])
+
+      vf2 = calc_vol_frac_simple(phi_c,grad_phi)
+      if abs(C[i,j,k] - vf2) > small:
+        print(vf2)
+        print(C[i,j,k])
+
+    if is_internal_cell(i,j,k):
+      if abs(C[i,j,k]- C[i,j,k+1]) > small:
+        print(C[i,j,k])
+        print(C[i,j,k+1])
+
+      if abs(C[i,j,k]-C[i,j,k-1]) > small:
+        print(C[i,j,k])
+        print(C[i,j,k-1])
+
+      if abs(M[i,j,k][2]) > small:
+        print(M[i,j,k][2])

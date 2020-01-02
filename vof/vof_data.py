@@ -1,7 +1,7 @@
 import numpy as np
 import taichi as ti
 
-ti.get_runtime().set_default_fp(ti.f32)
+ti.get_runtime().set_default_fp(ti.f64)
 
 ti.cfg.arch = ti.x86_64
 #ti.cfg.arch = ti.cuda
@@ -10,14 +10,14 @@ ti.cfg.arch = ti.x86_64
 # ******************************************************************************
 
 # internel grid size
-nx = 256
-ny = 256
+nx = 128
+ny = 128
 nz = 4
 
 # domain dimensions
 wx = 64
 wy = 64
-wz = 1
+wz = 4
 
 b_size = 4
 sb_size = b_size*4
@@ -25,22 +25,24 @@ n_init_subcells = 32
 
 # initial phi params
 init_phi = 1 # 0 = zalesaks disk, 1 = cylinder
-init_center = [12.112, 12.232 , 0.0]
-init_width = 5.4543531
-init_height = 0.1223142
-init_radius = 10.11171
+init_center = [12.0, 12.0 , 0.0]
+init_width = 5.0
+init_height = 15.0
+init_radius = 10.0
 init_plane_dir = [1.0, 0.0, 0.0]
 
 # some other constants
-Czero = 1.0e-6
+Czero = 1.0e-12
 Cone = 1.0-Czero
-small = 1.0e-6
-big  = 1.0e10
+Czero_cleanup = 5.0*Czero
+Cone_cleanup = 1.0-Czero_cleanup
+small = 1.0e-12
+big  = 1.0e12
 
 # computed paramters
-n_ghost = 1 # vof requres 1 ghost cell
+n_ghost = 1 # vof requires 1 ghost cell
 
-nx_ext = nx//2 # number of cells exterior to domain. includes ghost cells
+nx_ext = nx//2 # number of cells exterior to domain on each side. includes ghost cells
 ny_ext = ny//2
 nz_ext = nz//2
 
@@ -55,7 +57,7 @@ vol = dx*dy*dz
 
 # setup sparse simulation data arrays
 # *****************************************************************************
-real = ti.f32
+real = ti.f64
 iscalar = lambda: ti.var(dt=ti.i32)
 scalar = lambda: ti.var(dt=real)
 vector = lambda: ti.Vector(3, dt=real)

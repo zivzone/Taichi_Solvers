@@ -10,11 +10,13 @@ def apply_Neumann_BC():
         di  = nx_ext-i
       elif i >= 3*nx_ext:
         di = 3*nx_ext-i-1
+
       dj = 0
       if j < ny_ext:
         dj  = ny_ext-j
       elif j >= 3*ny_ext:
         dj = 3*ny_ext-j-1
+
       dk = 0
       if k < nz_ext:
         dk  = nz_ext-k
