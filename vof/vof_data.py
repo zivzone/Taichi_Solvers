@@ -17,7 +17,7 @@ nz = 4
 # domain dimensions
 wx = 64
 wy = 64
-wz = 4
+wz = 2
 
 b_size = 4
 sb_size = b_size*4
@@ -25,11 +25,11 @@ n_init_subcells = 32
 
 # initial phi params
 init_phi = 1 # 0 = zalesaks disk, 1 = cylinder
-init_center = [12.0, 12.0 , 0.0]
+init_center = [64.0-12.0, 64.0-12.0 , 0.0]
 init_width = 5.0
 init_height = 15.0
-init_radius = 10.0
-init_plane_dir = [1.0, 0.0, 0.0]
+init_radius = 10.1
+init_plane_dir = [1.0, 1.0, 0.0]
 
 # some other constants
 Czero = 1.0e-12

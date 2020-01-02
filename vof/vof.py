@@ -10,7 +10,7 @@ def main():
   initialize()
   write_C_png(0)
 
-  for i in range(100):
+  for i in range(250):
     # update the narrow band
     copy_to_temp()
     clear_data()
@@ -27,7 +27,7 @@ def main():
     # advect the volume fraction
     set_face_velocity()
     interp_face_velocity_to_vertex()
-    Dt[None] = .34523*dx
+    Dt[None] = .104523*dx
     back_track_DMC()
     compute_DC()
     update_C()

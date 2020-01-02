@@ -54,8 +54,8 @@ def get_vel_vortex_in_a_box(x,y,z):
 
 @ti.func
 def get_vel_transport(x,y,z):
-  u =  1.0
-  v =  0.0
+  u =  -1.0
+  v =  -1.0
   w =  0.0
   return u,v,w
 

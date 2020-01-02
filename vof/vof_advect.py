@@ -56,6 +56,7 @@ def back_track_DMC():
 
 @ti.kernel
 def compute_DC():
+  ti.serialize()
   # compute volume fraction fluxes using an isoadvector-like algorithm,
   # ie. the "time integral of the submerged face area"
   # ref: 'A Computational Method for Sharp Interface Advection'
@@ -95,7 +96,7 @@ def compute_DC():
               - phi[0][0][1]-phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/(4.0)
 
         #calculate the volume fraction of the space-time volume
-        #vf = calc_vol_frac(phi)
+        #vf1 = calc_vol_frac(phi)
         vf = calc_vol_frac_simple(phi_c,grad_phi)
         DCx[i,j,k] = vf*U[i,j,k]*dy*dz*dt
 
@@ -133,7 +134,7 @@ def compute_DC():
               - phi[0][0][1]-phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/(4.0)
 
         #calculate the volume fraction of the space-time volume
-        #vf = calc_vol_frac(phi)
+        #vf1 = calc_vol_frac(phi)
         vf = calc_vol_frac_simple(phi_c,grad_phi)
         DCy[i,j,k] = vf*V[i,j,k]*dx*dz*dt
 
