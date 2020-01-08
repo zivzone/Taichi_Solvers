@@ -7,12 +7,15 @@ def reconstruct_plic():
     if is_internal_cell(i,j,k) and is_interface_cell(i,j,k):
       mx,my,mz,alpha = recon(i,j,k)
       #transform normal vector and alpha into physical space
-      dlen = ti.sqrt(mx/dx*mx/dx+my/dy*my/dy+mz/dz*mz/dz)
-      M[i,j,k][0] = mx/(dx*dlen)
-      M[i,j,k][1] = my/(dy*dlen)
-      M[i,j,k][2] = mz/(dz*dlen)
       alpha = alpha + min(0.0,mx) + min(0.0,my) + min(0.0,mz)
-      Alpha[i,j,k] = alpha/dlen
+      mx /= dx
+      my /= dy
+      mz /= dz
+      M[i,j,k][0] = mx
+      M[i,j,k][1] = my
+      M[i,j,k][2] = mz
+      Alpha[i,j,k] = alpha
+
 
 @ti.kernel
 def reconstruct_phi():
@@ -25,7 +28,6 @@ def reconstruct_phi():
           phi = get_phi_from_plic(x,y,z,i+di,j+dj,k+dk)
           if abs(phi) < abs(Phi[i,j,k]):
             Phi[i,j,k] = phi
-
 
 
 @ti.func
@@ -85,7 +87,7 @@ def calc_lsq_vof_error(alpha, m, i, j, k):
       for di in range(-1,2):
         a = alpha - (m[0]*di + m[1]*dj + m[2]*dk)
         err = ti.abs(C[i+di,j+dj,k+dk] - calc_C(a,m))
-        error = error + err
+        error = error + err*err
   return error
 
 
@@ -98,7 +100,7 @@ def my_cbrt(n):
     a = 0.0
     b = n
     root = (a+b)/2.0
-    while (root*root*root-n > small or iter < 10000):
+    while (abs(root*root*root-n) > small or iter < 1000):
       root = (a+b)/2.0
       if root*root*root<n:
         a = root
@@ -109,7 +111,7 @@ def my_cbrt(n):
     a = 1.0
     b = n
     root = (a+b)/2.0
-    while (root*root*root-n > small or iter < 10000):
+    while (abs(root*root*root-n) > small or iter < 1000):
       root = (a+b)/2.0
       if root*root*root>n:
         a = root
@@ -133,7 +135,7 @@ def calc_alpha(c, m):
 
   r13 = 1.0/3.0
   if (c <= Czero or c >= Cone):
-    alpha = -1.0e10
+    alpha = -small
   else:
     # convert normal vector into Zaleski's m vector
     mx = ti.abs(m[0])
@@ -212,7 +214,9 @@ def ELVIRA(i, j, k):
   # x-heights
   for dk in ti.static(range(-1,2)):
     for dj in ti.static(range(-1,2)):
-      h[dj+1][dk+1] = C[i-1,j+dj,k+dk] + C[i,j+dj,k+dk] + C[i+1,j+dj,k+dk]
+      h[dj+1][dk+1] = 0.0
+      for di in ti.static(range(-2,2+1)):
+        h[dj+1][dk+1] += C[i+di,j+dj,k+dk]
 
   # forward, central, backward difference
   hyb = (h[1][1] - h[0][1])
@@ -262,7 +266,9 @@ def ELVIRA(i, j, k):
   # y-heights
   for dk in ti.static(range(-1,2)):
     for di in ti.static(range(-1,2)):
-      h[di+1][dk+1] = C[i+di,j-1,k+dk] + C[i+di,j,k+dk] + C[i+di,j+1,k+dk]
+      h[di+1][dk+1] = 0.0
+      for dj in ti.static(range(-2,2+1)):
+        h[di+1][dk+1] += C[i+di,j+dj,k+dk]
 
   # forward, central, backward differences
   hxb = (h[1][1] - h[0][1])
@@ -312,7 +318,9 @@ def ELVIRA(i, j, k):
   # z-heights
   for dj in ti.static(range(-1,2)):
     for di in ti.static(range(-1,2)):
-      h[di+1][dj+1] = C[i+di,j+dj,k-1] + C[i+di,j+dj,k] + C[i+di,j+dj,k+1]
+      h[di+1][dj+1] = 0.0
+      for dk in ti.static(range(-2,2+1)):
+        h[di+1][dj+1] += C[i+di,j+dj,k+dk]
 
   # forward, central, backward differences
   hxb = (h[1][1] - h[0][1])
@@ -352,15 +360,36 @@ def ELVIRA(i, j, k):
       alp = calc_alpha(C[i,j,k], n)
       error = calc_lsq_vof_error(alp,n,i,j,k)
 
-      #if (error < errorMin):
-      #  errorMin = error
-      #  alpha = alp
-      #  m[0] = n[0]
-      #  m[1] = n[1]
-      #  m[2] = n[2]
+    #  if (error < errorMin):
+    #    errorMin = error
+    #    alpha = alp
+    #    m[0] = n[0]
+    #    m[1] = n[1]
+    #    m[2] = n[2]
 
   return m[0], m[1], m[2], alpha
 
 
+
+@ti.func
+def Young(i,j,k):
+  m = ti.Vector([0.0,0.0,0.0])
+  n = ti.Vector([0.0,0.0,0.0])
+
+  # average the gradient computed at eight vertices
+  for di,dj,dk in ti.static(ti.ndrange((0,2),(0,2),(0,2))):
+    n[0] = ((C[i+di,j+dj,k+dk]+C[i+di,j+dj-1,k+dk]+C[i+di,j+dj,k+dk-1]+C[i+di,j+dj-1,k+dk-1]) \
+           -(C[i+di-1,j+dj,k+dk]+C[i+di-1,j+dj-1,k+dk]+C[i+di-1,j+dj,k+dk-1]+C[i+di-1,j+dj-1,k+dk-1]))/4.0
+    n[1] = ((C[i+di,j+dj,k+dk]+C[i+di-1,j+dj,k+dk]+C[i+di,j+dj,k+dk-1]+C[i+di-1,j+dj,k+dk-1]) \
+           -(C[i+di,j+dj-1,k+dk]+C[i+di-1,j+dj-1,k+dk]+C[i+di,j+dj-1,k+dk-1]+C[i+di-1,j+dj-1,k+dk-1]))/4.0
+    n[2] = ((C[i+di,j+dj,k+dk]+C[i+di-1,j+dj,k+dk]+C[i+di,j+dj-1,k+dk]+C[i+di-1,j+dj-1,k+dk]) \
+           -(C[i+di,j+dj,k+dk-1]+C[i+di-1,j+dj,k+dk-1]+C[i+di,j+dj-1,k+dk-1]+C[i+di-1,j+dj-1,k+dk-1]))/4.0
+    m += n
+
+  m = m/8.0
+  m = -m/(ti.abs(m[0]) + ti.abs(m[1]) + ti.abs(m[2]))
+  alpha = calc_alpha(C[i,j,k], m)
+  return m[0], m[1], m[2], alpha
+
 # set the reconstruction function
-recon = ELVIRA
+recon = Young

@@ -121,7 +121,7 @@ def init_C(x,y,z):
         grad_phi[0] = 0.5*(get_phi(xc+dxc, yc, zc)-get_phi(xc-dxc, yc, zc))
         grad_phi[1] = 0.5*(get_phi(xc, yc+dyc, zc)-get_phi(xc, yc-dyc, zc))
         grad_phi[2] = 0.5*(get_phi(xc, yc, zc+dzc)-get_phi(xc, yc, zc-dzc))
-        vol = vol + calc_vol_frac_simple(phi,grad_phi)/(n*n*n)
+        vol = vol + calc_vol_frac(phi,grad_phi)/(n*n*n)
 
   return vol
 

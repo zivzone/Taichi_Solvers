@@ -70,36 +70,35 @@ def internal_cells_to_img(img: ti.ext_arr()):
 
 ## plotting functions ##
 def plot_interfaces():
+  k = nz_ext
   for j in range(ny_tot):
     for i in range(nx_tot):
-      for k in range(nz_tot):
-        if abs(M[i,j,k][0]) > 100*small or abs(M[i,j,k][1]) > 100*small:
-          x,y,z = get_vert_loc(i,j,k)
-          if abs(M[i,j,k][0]) > abs(M[i,j,k][1]):
-            yl = np.array([y,y+dy])
-            if (M[i,j,k][0] > 0.0 and M[i,j,k][1] > 0.0) or (M[i,j,k][0] < 0.0 and M[i,j,k][1] < 0.0):
-              yl[0] = max(yl[0],-(M[i,j,k][0]*dx-Alpha[i,j,k])/M[i,j,k][1] + y)
-              yl[1] = min(yl[1],-(M[i,j,k][0]*0.0-Alpha[i,j,k])/M[i,j,k][1] + y)
-            if (M[i,j,k][0] > 0.0 and M[i,j,k][1] < 0.0) or (M[i,j,k][0] < 0.0 and M[i,j,k][1] > 0.0):
-              yl[0] = max(yl[0],-(M[i,j,k][0]*0.0-Alpha[i,j,k])/M[i,j,k][1] + y)
-              yl[1] = min(yl[1],-(M[i,j,k][0]*dx-Alpha[i,j,k])/M[i,j,k][1] + y)
-            xl = -(M[i,j,k][1]*(yl-y) - Alpha[i,j,k])/M[i,j,k][0] + x
-            plt.plot(xl,yl)
-          else:
-            xl = np.array([x,x+dx])
-            if (M[i,j,k][0] > 0.0 and M[i,j,k][1] > 0.0) or (M[i,j,k][0] < 0.0 and M[i,j,k][1] < 0.0):
-              xl[0] = max(xl[0],-(M[i,j,k][1]*dy - Alpha[i,j,k])/M[i,j,k][0] + x)
-              xl[1] = min(xl[1],-(M[i,j,k][1]*0.0 - Alpha[i,j,k])/M[i,j,k][0] + x)
-            if (M[i,j,k][0] > 0.0 and M[i,j,k][1] < 0.0) or (M[i,j,k][0] < 0.0 and M[i,j,k][1] > 0.0):
-              xl[0] = max(xl[0],-(M[i,j,k][1]*0.0 - Alpha[i,j,k])/M[i,j,k][0] + x)
-              xl[1] = min(xl[1],-(M[i,j,k][1]*dy - Alpha[i,j,k])/M[i,j,k][0] + x)
-            yl = -(M[i,j,k][0]*(xl-x) - Alpha[i,j,k])/M[i,j,k][1] + y
-            plt.plot(xl,yl)
+      if abs(M[i,j,k][0]) > 100*small or abs(M[i,j,k][1]) > 100*small:
+        x,y,z = get_vert_loc(i,j,k)
+        if abs(M[i,j,k][0]) > abs(M[i,j,k][1]):
+          yl = np.array([y,y+dy])
+          if (M[i,j,k][0] > 0.0 and M[i,j,k][1] > 0.0) or (M[i,j,k][0] < 0.0 and M[i,j,k][1] < 0.0):
+            yl[0] = max(yl[0],-(M[i,j,k][0]*dx-Alpha[i,j,k])/M[i,j,k][1] + y)
+            yl[1] = min(yl[1],-(M[i,j,k][0]*0.0-Alpha[i,j,k])/M[i,j,k][1] + y)
+          if (M[i,j,k][0] > 0.0 and M[i,j,k][1] < 0.0) or (M[i,j,k][0] < 0.0 and M[i,j,k][1] > 0.0):
+            yl[0] = max(yl[0],-(M[i,j,k][0]*0.0-Alpha[i,j,k])/M[i,j,k][1] + y)
+            yl[1] = min(yl[1],-(M[i,j,k][0]*dx-Alpha[i,j,k])/M[i,j,k][1] + y)
+          xl = -(M[i,j,k][1]*(yl-y) - Alpha[i,j,k])/M[i,j,k][0] + x
+          plt.plot(xl,yl)
+        else:
+          xl = np.array([x,x+dx])
+          if (M[i,j,k][0] > 0.0 and M[i,j,k][1] > 0.0) or (M[i,j,k][0] < 0.0 and M[i,j,k][1] < 0.0):
+            xl[0] = max(xl[0],-(M[i,j,k][1]*dy - Alpha[i,j,k])/M[i,j,k][0] + x)
+            xl[1] = min(xl[1],-(M[i,j,k][1]*0.0 - Alpha[i,j,k])/M[i,j,k][0] + x)
+          if (M[i,j,k][0] > 0.0 and M[i,j,k][1] < 0.0) or (M[i,j,k][0] < 0.0 and M[i,j,k][1] > 0.0):
+            xl[0] = max(xl[0],-(M[i,j,k][1]*0.0 - Alpha[i,j,k])/M[i,j,k][0] + x)
+            xl[1] = min(xl[1],-(M[i,j,k][1]*dy - Alpha[i,j,k])/M[i,j,k][0] + x)
+          yl = -(M[i,j,k][0]*(xl-x) - Alpha[i,j,k])/M[i,j,k][1] + y
+          plt.plot(xl,yl)
   plt.grid(color='k', linestyle='-', linewidth=.25)
   plt.xticks(np.arange(0, wx, wx/nx))
   plt.yticks(np.arange(0, wy, wy/ny))
   plt.axis([0, wx, 0, wy])
-  plt.show()
 
 def write_band_png(n):
   img = np.zeros((nx,ny),dtype=np.float32)

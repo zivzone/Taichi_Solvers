@@ -10,7 +10,7 @@ def main():
   initialize()
   write_C_png(0)
 
-  for i in range(250):
+  for i in range(n_timesteps):
     # update the narrow band
     copy_to_temp()
     clear_data()
@@ -20,18 +20,19 @@ def main():
     # reconstruct the interface
     reconstruct_plic()
     reconstruct_phi()
+    #plot_interfaces()
 
     # check that volume estimate functions work
     check_vof()
 
     # advect the volume fraction
     set_face_velocity()
+    Dt[None] = CFL*min(dx/(u_transport+small), dy/(v_transport+small))
+
     interp_face_velocity_to_vertex()
-    Dt[None] = .104523*dx
     back_track_DMC()
     compute_DC()
     update_C()
-
     # bound volume fraction to physical values
     #for j in range(5):
     #  zero_DC_bounding()
@@ -42,16 +43,18 @@ def main():
     #apply boundary conditions
     apply_Neumann_BC()
 
-
     if i%10 ==0:
       print(i)
       write_band_png(i+1)
       write_C_png(i+1)
       write_M_png(i+1)
-      write_Phi_png(i+1)
+      #write_Phi_png(i+1)
+      plot_interfaces()
+
+  #plot_interfaces()
+  plt.show()
 
 
-  plot_interfaces()
 
   ti.profiler_print()
 if __name__ == '__main__':
