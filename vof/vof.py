@@ -19,19 +19,17 @@ def main():
 
     # reconstruct the interface
     reconstruct_plic()
-    reconstruct_phi()
-    #plot_interfaces()
+    #reconstruct_phi()
 
     # check that volume estimate functions work
-    check_vof()
+    #check_vof()
 
     # advect the volume fraction
     set_face_velocity()
     Dt[None] = CFL*min(dx/(u_transport+small), dy/(v_transport+small))
-
     interp_face_velocity_to_vertex()
     back_track_DMC()
-    compute_DC()
+    compute_DC_isoadvector()
     update_C()
     # bound volume fraction to physical values
     #for j in range(5):
@@ -49,9 +47,8 @@ def main():
       write_C_png(i+1)
       write_M_png(i+1)
       #write_Phi_png(i+1)
-      plot_interfaces()
 
-  #plot_interfaces()
+  plot_interfaces()
   plt.show()
 
 

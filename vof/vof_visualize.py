@@ -127,7 +127,7 @@ def write_Phi_png(n):
   Phi_to_img(img)
   img = np.transpose(img)
   img = np.flipud(img)
-  plt.contourf(img)
+  plt.contour(img, [0])
   plt.show()
   #cv2.imwrite("output/C"+str(n)+".png", img * 255.0)
   #np.savetxt('output/C0.txt', img, fmt='%8.9f')

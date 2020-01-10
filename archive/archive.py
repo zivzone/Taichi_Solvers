@@ -1,5 +1,7 @@
+@ti.func
+def swap(a,b):
+  return b,a
 
-## volume fraction estimation functions ##
 @ti.func
 def sort_four(A):
   low1 = 0.0
@@ -116,19 +118,15 @@ def calc_vol_frac_b(phi):
 
   # choose the integration order by sorting the distances, max to min
   # swap data
-  order = ti.Vector([0,1,2])
   if l[0] < l[1]:
-    order[0],order[1] = swap(order[0],order[1])
     l[0],l[1] = swap(l[0],l[1])
     Bx,By = swap(Bx,By)
     Bxz,Byz = swap(Bxz,Byz)
   if l[1] < l[2]:
-    order[1],order[2] = swap(order[2],order[1])
     l[1],l[2] = swap(l[1],l[2])
     By,Bz = swap(By,Bz)
     Bxy,Bxz = swap(Bxy,Bxz)
   if l[0] < l[1]:
-    order[0],order[1] = swap(order[0],order[1])
     l[0],l[1] = swap(l[0],l[1])
     Bx,By = swap(Bx,By)
     Bxz,Byz = swap(Bxz,Byz)
@@ -160,7 +158,7 @@ def calc_vol_frac_b(phi):
 
 
 @ti.func
-def calc_vol_frac(phi):
+def calc_vol_frac_GQ(phi):
   # compute the volume fraction from level set at vertices
   # by splitting the cell into elementary cases then using gaussian quadrature
   # ref: 'A consistent analytical formulation for volume-estimation of geometries enclosed by
@@ -256,3 +254,46 @@ def calc_vol_frac(phi):
     vf = 1.0
 
   return vf
+
+  @ti.func
+  def get_smooth_phi_and_weight_from_plic(x,y,z,i,j,k):
+    # get the "smoothed" distance from plic plane
+    # ref: 'Single-step reinitialization and extending algorithms for
+    # level-set based multi-phase flow simulations'
+
+    # loc relative to interface cell origin
+    x0,y0,z0 = get_vert_loc(i,j,k)
+    xt = x-x0
+    yt = y-y0
+    zt = z-z0
+
+    # interface cell center
+    xc = dx/2.0
+    yc = dy/2.0
+    zc = dz/2.0
+
+    #compute the interface point
+    phi_c =  -(M[i,j,k][0]*xc + M[i,j,k][1]*yc + M[i,j,k][2]*zc - Alpha[i,j,k]) # M is normalized to length of 1
+    xint = xc+phi_c*M[i,j,k][0]
+    yint = yc+phi_c*M[i,j,k][1]
+    zint = zc+phi_c*M[i,j,k][2]
+
+    # signed distance of interface patch to target point
+    d = -(M[i,j,k][0]*xt + M[i,j,k][1]*yt + M[i,j,k][2]*zt - Alpha[i,j,k]) # M is normalized to length of 1
+
+    # signed distance from interface point to target point
+    r = ti.sqrt((xint-xt)*(xint-xt)+(yint-yt)*(yint-yt)+(zint-zt)*(zint-zt))
+    if d < 0.0: r = -r
+
+    #misalignment length between ray cast from interface point to target point
+    h = abs(r*r-d*d)
+
+    # blend d and h with wendland function
+    delta = np.sqrt(dx*dx+dy*dy+dz*dz)
+    zeta = min(h/(3.0*delta),1.0)
+    beta = (1.0-zeta)**6 * (1.0 + 6.0*zeta + 35.0/3.0*zeta**2)
+
+    phi = beta*d + (1.0-beta)*r
+
+    w = phi*phi/r*r
+    return phi, w

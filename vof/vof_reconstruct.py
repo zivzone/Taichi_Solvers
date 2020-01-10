@@ -21,13 +21,35 @@ def reconstruct_plic():
 def reconstruct_phi():
   for i,j,k in Flags:
     if is_active_cell(i,j,k) or is_buffer_cell(i,j,k):
-      Phi[i,j,k] = big
+      num = 0.0
+      den = 0.0
       x,y,z = get_cell_loc(i,j,k)
+      flag1 = False
       for di,dj,dk in ti.ndrange((-2,3),(-2,3),(-2,3)):
         if is_interface_cell(i+di,j+dj,k+dk):
-          phi = get_phi_from_plic(x,y,z,i+di,j+dj,k+dk)
-          if abs(phi) < abs(Phi[i,j,k]):
-            Phi[i,j,k] = phi
+          flag1 = True
+          phi,w = get_phi_and_weight_from_plic(x,y,z,i+di,j+dj,k+dk)
+          num += phi*w
+          den += w
+      if flag1:
+        Phi[i,j,k] = num/(den+small)
+      else:
+        Phi[i,j,k] = big
+
+@ti.kernel
+def reconstruct_plic_from_phi():
+  for i,j,k in Flags:
+    if is_internal_cell(i,j,k) and is_interface_cell(i,j,k):
+      mx,my,mz,alpha = recon_from_phi(i,j,k)
+      #transform normal vector and alpha into physical space
+      alpha = alpha + min(0.0,mx) + min(0.0,my) + min(0.0,mz)
+      mx /= dx
+      my /= dy
+      mz /= dz
+      M[i,j,k][0] = mx
+      M[i,j,k][1] = my
+      M[i,j,k][2] = mz
+      Alpha[i,j,k] = alpha
 
 
 @ti.func
@@ -360,12 +382,12 @@ def ELVIRA(i, j, k):
       alp = calc_alpha(C[i,j,k], n)
       error = calc_lsq_vof_error(alp,n,i,j,k)
 
-    #  if (error < errorMin):
-    #    errorMin = error
-    #    alpha = alp
-    #    m[0] = n[0]
-    #    m[1] = n[1]
-    #    m[2] = n[2]
+      if (error < errorMin):
+        errorMin = error
+        alpha = alp
+        m[0] = n[0]
+        m[1] = n[1]
+        m[2] = n[2]
 
   return m[0], m[1], m[2], alpha
 
@@ -391,5 +413,17 @@ def Young(i,j,k):
   alpha = calc_alpha(C[i,j,k], m)
   return m[0], m[1], m[2], alpha
 
+@ti.func
+def recon_from_phi(i,j,k):
+  m = ti.Vector([0.0,0.0,0.0])
+
+  m[0] = (Phi[i+1,j,k]-Phi[i-1,j,k])/(2.0*dx)
+  m[1] = (Phi[i,j+1,k]-Phi[i,j-1,k])/(2.0*dy)
+  m[2] = (Phi[i,j,k+1]-Phi[i,j,k-1])/(2.0*dz)
+
+  m = -m/(ti.abs(m[0]) + ti.abs(m[1]) + ti.abs(m[2]))
+  alpha = calc_alpha(C[i,j,k], m)
+  return m[0], m[1], m[2], alpha
+
 # set the reconstruction function
-recon = Young
+recon = ELVIRA

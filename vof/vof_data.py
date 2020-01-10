@@ -9,7 +9,7 @@ ti.cfg.arch = ti.x86_64
 # grid parameters
 # ******************************************************************************
 CFL = .25
-n_timesteps = 150
+n_timesteps = 64
 
 # internel grid size
 nx = 64
@@ -19,23 +19,23 @@ nz = 4
 # domain dimensions
 wx = 64
 wy = 64
-wz = 4
+wz = .001
 
 b_size = 4
 sb_size = b_size*4
-n_init_subcells = 32
+n_init_subcells = 2
 
 # initial phi params
 init_phi = 1 # 0 = zalesaks disk, 1 = cylinder
-init_center = [12.1, 12.1 , 0.0]
-init_width = 5
-init_height = 15
+init_center = [12, 12 , 0.0]
+init_width = 4
+init_height = 12
 init_radius = 10
 init_plane_dir = [.1, 1.0, 0.0]
 
 # trasport velocity
 u_transport = 1.0
-v_transport = .5
+v_transport = 1.0
 
 # some other constants
 Czero = 1.0e-8

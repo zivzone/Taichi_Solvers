@@ -65,6 +65,6 @@ def grow_band():
       for dk in ti.static(range(-1,2)):
         for dj in ti.static(range(-1,2)):
           for di in ti.static(range(-1,2)):
-            if not is_active_cell(i+di,j+dj,k+dk):
+            if is_active_cell(i+di,j+dj,k+dk)==False:
               Flags[i+di,j+dj,k+dk] = Flags[i+di,j+dj,k+dk]|flag_enum.CELL_BUFFER
               C[i+di,j+dj,k+dk] = C[i,j,k]
