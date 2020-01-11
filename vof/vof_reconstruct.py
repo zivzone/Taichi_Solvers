@@ -7,18 +7,16 @@ def reconstruct_plic():
     if is_internal_cell(i,j,k) and is_interface_cell(i,j,k):
       mx,my,mz,alpha = recon(i,j,k)
       #transform normal vector and alpha into physical space
-      alpha = alpha + min(0.0,mx) + min(0.0,my) + min(0.0,mz)
-      mx /= dx
-      my /= dy
-      mz /= dz
-      M[i,j,k][0] = mx
-      M[i,j,k][1] = my
-      M[i,j,k][2] = mz
-      Alpha[i,j,k] = alpha
+      Alpha[i,j,k] = alpha + min(0.0,mx) + min(0.0,my) + min(0.0,mz)
+      M[i,j,k][0] = mx/dx
+      M[i,j,k][1] = my/dy
+      M[i,j,k][2] = mz/dz
 
 
 @ti.kernel
-def reconstruct_phi():
+def reconstruct_phi_from_plic():
+  # reconstruct level set in cells near the interface as the weighted average
+  # of the signed distances from plic planes in nearby cells
   for i,j,k in Flags:
     if is_active_cell(i,j,k) or is_buffer_cell(i,j,k):
       num = 0.0
@@ -40,20 +38,23 @@ def reconstruct_phi():
 def reconstruct_plic_from_phi():
   for i,j,k in Flags:
     if is_internal_cell(i,j,k) and is_interface_cell(i,j,k):
-      mx,my,mz,alpha = recon_from_phi(i,j,k)
+      m = ti.Vector([0.0,0.0,0.0])
+      m[0] = (Phi[i+1,j,k]-Phi[i-1,j,k])/(2.0)
+      m[1] = (Phi[i,j+1,k]-Phi[i,j-1,k])/(2.0)
+      m[2] = (Phi[i,j,k+1]-Phi[i,j,k-1])/(2.0)
+      m = -m/(ti.abs(m[0]) + ti.abs(m[1]) + ti.abs(m[2]))
+      alpha = calc_alpha(C[i,j,k], m)
+
       #transform normal vector and alpha into physical space
-      alpha = alpha + min(0.0,mx) + min(0.0,my) + min(0.0,mz)
-      mx /= dx
-      my /= dy
-      mz /= dz
-      M[i,j,k][0] = mx
-      M[i,j,k][1] = my
-      M[i,j,k][2] = mz
-      Alpha[i,j,k] = alpha
+      Alpha[i,j,k] = alpha + min(0.0,mx) + min(0.0,my) + min(0.0,mz)
+      M[i,j,k][0] = mx/dx
+      M[i,j,k][1] = my/dy
+      M[i,j,k][2] = mz/dz
 
 
 @ti.func
 def calc_C(alpha, m):
+  # computes the volume fraction given the normal vector and plane constant alpha
   c = 0.0
   if alpha < 0.0:
     c = 0.0
@@ -115,7 +116,7 @@ def calc_lsq_vof_error(alpha, m, i, j, k):
 
 @ti.func
 def my_cbrt(n):
-  # my own cube root function using bisection method
+  # my own cube root function using bisection method, since taichi doesnt have it yet
   iter = 0
   root = 1.0
   if n>1.0:
@@ -153,12 +154,10 @@ def calc_alpha(c, m):
   #         Note: alpha is not with respect to the lower,front,left corner of the cell. To get it for
   #         this "standard" coordinate system, coordinate mirroring (corrections to alpha) would have to
   #---------------------------------------
-  alpha = 0.0
+  alpha = small
 
   r13 = 1.0/3.0
-  if (c <= Czero or c >= Cone):
-    alpha = -small
-  else:
+  if (c > Czero or c < Cone):
     # convert normal vector into Zaleski's m vector
     mx = ti.abs(m[0])
     my = ti.abs(m[1])
@@ -216,8 +215,8 @@ def calc_alpha(c, m):
       cs = ti.cos(teta)
       alpha = p12*(ti.sqrt(3.0*(1.0-cs*cs)) - cs) + 0.5*(m1+m2+m3)
 
-    if (c > 0.5):
-      alpha = (m1+m2+m3)-alpha
+  if (c > 0.5):
+    alpha = 1.0-alpha
 
   return alpha
 
@@ -415,15 +414,8 @@ def Young(i,j,k):
 
 @ti.func
 def recon_from_phi(i,j,k):
-  m = ti.Vector([0.0,0.0,0.0])
 
-  m[0] = (Phi[i+1,j,k]-Phi[i-1,j,k])/(2.0*dx)
-  m[1] = (Phi[i,j+1,k]-Phi[i,j-1,k])/(2.0*dy)
-  m[2] = (Phi[i,j,k+1]-Phi[i,j,k-1])/(2.0*dz)
-
-  m = -m/(ti.abs(m[0]) + ti.abs(m[1]) + ti.abs(m[2]))
-  alpha = calc_alpha(C[i,j,k], m)
   return m[0], m[1], m[2], alpha
 
 # set the reconstruction function
-recon = ELVIRA
+recon = Young

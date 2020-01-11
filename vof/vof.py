@@ -21,13 +21,13 @@ def main():
     reconstruct_plic()
     #reconstruct_phi()
 
-    # check that volume estimate functions work
-    #check_vof()
+    check_vof()
 
     # advect the volume fraction
+
     set_face_velocity()
     Dt[None] = CFL*min(dx/(u_transport+small), dy/(v_transport+small))
-    interp_face_velocity_to_vertex()
+    interp_velocity_to_vertex()
     back_track_DMC()
     compute_DC_isoadvector()
     update_C()
@@ -41,12 +41,15 @@ def main():
     #apply boundary conditions
     apply_Neumann_BC()
 
-    if i%10 ==0:
+
+    if i%1 ==0:
       print(i)
       write_band_png(i+1)
       write_C_png(i+1)
       write_M_png(i+1)
       #write_Phi_png(i+1)
+      #plot_interfaces()
+      #plt.show()
 
   plot_interfaces()
   plt.show()

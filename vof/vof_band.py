@@ -15,6 +15,10 @@ def copy_from_temp():
 
 @ti.kernel
 def grow_band():
+  # grow the bands, copy data from temp array back to main array where active,
+  # activating different flags must be seperate kernels for now since bitwise oiperators are not atomic yet
+
+  # grow the interface band
   for i,j,k in Flags_temp:
     if is_internal_cell(i,j,k) and (Flags_temp[i,j,k]&flag_enum.CELL_ACTIVE)==flag_enum.CELL_ACTIVE: #use Flags_temp
       # check if this is and interface cell
@@ -32,9 +36,10 @@ def grow_band():
             Flags[i,j,k] = flag_enum.CELL_INTERFACE
             C[i,j,k] = C_temp[i,j,k]
 
+  # grow the active band in 4 kernels
   for i,j,k in Flags:
     if is_internal_cell(i,j,k) and is_interface_cell(i,j,k):
-      # flag this cell and neighbors as active
+      # flag interface cell and its neighbors as active
       for dk in ti.static(range(-1,2)):
         for dj in ti.static(range(-1,2)):
           for di in ti.static(range(-1,2)):
@@ -43,24 +48,25 @@ def grow_band():
 
   for i,j,k in Flags:
     if is_internal_cell(i,j,k) and is_active_cell(i,j,k):
-      # flag all faces of this cell as active
+      # flag x-faces of active cell
       Flags[i,j,k] = Flags[i,j,k]|flag_enum.X_FACE_ACTIVE
       Flags[i+1,j,k] = Flags[i+1,j,k]|flag_enum.X_FACE_ACTIVE
 
   for i,j,k in Flags:
     if is_internal_cell(i,j,k) and is_active_cell(i,j,k):
-      # flag all faces of this cell as active
+      # flag y-faces of active cell
       Flags[i,j,k] = Flags[i,j,k]|flag_enum.Y_FACE_ACTIVE
       Flags[i,j+1,k] = Flags[i,j+1,k]|flag_enum.Y_FACE_ACTIVE
 
   for i,j,k in Flags:
     if is_internal_cell(i,j,k) and is_active_cell(i,j,k):
-      # flag all faces of this cell as active
+      # flag z-faces of active cell
       Flags[i,j,k] = Flags[i,j,k]|flag_enum.Z_FACE_ACTIVE
       Flags[i,j,k+1] = Flags[i,j,k+1]|flag_enum.Z_FACE_ACTIVE
 
+  # grow the buffer band
   for i,j,k in Flags:
-    if is_internal_cell(i,j,k) and is_active_cell(i,j,k):
+    if is_internal_cell(i,j,k) and is_active_cell(i,j,k) and not is_interface_cell(i,j,k):
       # flag neighbors of active cells as buffer cells
       for dk in ti.static(range(-1,2)):
         for dj in ti.static(range(-1,2)):

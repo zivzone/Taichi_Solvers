@@ -1,8 +1,9 @@
 from vof_data import *
 from vof_util import *
+from vof_reconstruct import *
 
 @ti.kernel
-def interp_face_velocity_to_vertex():
+def interp_velocity_to_vertex():
   # interpolate face center velocity components to cell vertices
   for i,j,k in Flags:
     if is_internal_vertex(i,j,k) or is_ghost_vertex(i,j,k):
@@ -451,12 +452,22 @@ def check_vof():
       grad_phi[2] = -(phi[0][0][0]+phi[1][0][0]+phi[0][1][0]+phi[1][1][0] \
             - phi[0][0][1]-phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/4.0
 
+      m = ti.Vector([0.0,0.0,0.0])
+      m[0] = M[i,j,k][0]*dx
+      m[1] = M[i,j,k][1]*dy
+      m[2] = M[i,j,k][2]*dz
+      alpha = Alpha[i,j,k] - min(0.0,m[0]) - min(0.0,m[1]) - min(0.0,m[2])
       #calculate the volume fraction from phi
+      vf1 = calc_C(alpha,m)
       vf = calc_vol_frac(phi_c,grad_phi)
       if abs(C[i,j,k] - vf) > 1.0e-6:
         print(phi_c)
         print(vf)
+        print(vf1)
         print(C[i,j,k])
+        print(m[0])
+        print(m[1])
+        print(m[2])
 
     if is_internal_cell(i,j,k):
       if abs(C[i,j,k]- C[i,j,k+1]) > 1.0e-6:
