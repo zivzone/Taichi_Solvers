@@ -3,7 +3,6 @@ import numpy as np
 from vof_data import *
 
 
-
 ## location functions
 @ti.func
 def get_block_loc(ib,jb,kb):
@@ -57,7 +56,12 @@ def get_vel_transport(x,y,z):
   w =  0.0
   return u,v,w
 
-get_vel = get_vel_transport
+if(init_vel == 0):
+  get_vel = get_vel_solid_body_rotation
+elif(init_vel == 1):
+  get_vel = get_vel_vortex_in_a_box
+else:
+  get_vel = get_vel_transport
 
 @ti.kernel
 def set_face_velocity():
@@ -122,7 +126,7 @@ def get_phi_and_weight_from_plic(x,y,z,i,j,k):
 def clear_data():
   for i,j,k in Flags:
     Flags[i,j,k] = 0
-    C[i,j,k] = 0.0
+    #C[i,j,k] = 0.0
     M[i,j,k] = [0.0, 0.0, 0.0]
     Phi[i,j,k] = 0.0
 
@@ -131,7 +135,7 @@ def clear_data():
 def clear_data_temp():
   for i,j,k in Flags_temp:
     Flags_temp[i,j,k] = 0
-    C_temp[i,j,k] = 0.0
+    #C_temp[i,j,k] = 0.0
 
 
 def clear_data_and_deactivate():

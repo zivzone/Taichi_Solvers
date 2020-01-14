@@ -3,6 +3,17 @@ from vof_util import *
 from vof_reconstruct import *
 
 @ti.kernel
+def calc_Dt():
+  ti.serialize()
+  for i,j,k in Flags:
+    if is_active_cell(i,j,k):
+      dt = CFL*min(dx/(abs((U[i,j,k]+U[i+1,j,k])/2.0)+small), \
+               min(dy/(abs((V[i,j,k]+V[i,j+1,k])/2.0)+small), \
+                      dz/(abs((W[i,j,k]+W[i,j,k+1])/2.0)+small)))
+      Dt[None] = min(Dt[None], dt)
+
+
+@ti.kernel
 def interp_velocity_to_vertex():
   # interpolate face center velocity components to cell vertices
   for i,j,k in Flags:
@@ -11,11 +22,11 @@ def interp_velocity_to_vertex():
       Vel_vert[i,j,k][1] = (V[i,j,k] + V[i,j-1,k])/2.0
       Vel_vert[i,j,k][2] = (W[i,j,k] + W[i,j,k-1])/2.0
 
-
 @ti.kernel
 def back_track_DMC():
   # compute the Dual Mesh Characteristic backtracked vertex position
   # ref 'Dual-Mesh Characteristics for Particle-Mesh Methods for the Simulation of Convection-Dominated Flows'
+  # this is comparable in accuracy to rk4 but only takes one step
   for i,j,k in Flags:
     if is_internal_vertex(i,j,k):
       dt = Dt[None]
@@ -59,6 +70,8 @@ def back_track_DMC():
 def compute_DC_isoadvector():
   # compute volume fraction fluxes using an isoadvector-like algorithm,
   # ie. the "time integral of the submerged face area"
+  # to do this we compute the levelset at the 4 vertices of the face at time t and t+dt,
+  # then estimate the volume fraction of the 3-d space-time cell using analytical formulas
   # ref: 'A Computational Method for Sharp Interface Advection'
   for i,j,k in Flags:
     dt = Dt[None]
@@ -70,6 +83,18 @@ def compute_DC_isoadvector():
       kuw = k
       if U[i,j,k] > 0.0:
         iuw = i-1
+      """
+      # try to use one of the upwind cell's neighbors
+      umax = 0.0;
+      if not is_interface_cell(iuw,juw,kuw):
+        if V[iuw,j,kuw] > 0.0 and is_interface_cell(iuw,j-1,kuw) and abs(V[iuw,j,kuw])>umax:
+          juw = j-1
+          umax = abs(V[iuw,j,kuw])
+        if V[iuw,j+1,kuw] < 0.0 and is_interface_cell(iuw,j+1,kuw) and abs(V[iuw,j+1,kuw])>umax:
+          juw = j+1
+          umax = abs(V[iuw,j+1,kuw])
+      """
+
 
       # intialize DCx to upwind volume fraction
       DCx[i,j,k] = C[iuw,juw,kuw]*U[i,j,k]*dy*dz*dt
@@ -111,6 +136,18 @@ def compute_DC_isoadvector():
       kuw = k
       if V[i,j,k] > 0.0:
         juw = j-1
+      """
+      # try to use one of the upwind cell's neighbors
+      umax = 0.0;
+      if not is_interface_cell(iuw,juw,kuw):
+        if U[i,juw,kuw] > 0.0 and is_interface_cell(i-1,juw,kuw) and abs(U[i,juw,kuw])>umax:
+          iuw = i-1
+          umax = abs(U[i,juw,kuw])
+          if U[i+1,juw,kuw] < 0.0 and is_interface_cell(i+1,juw,kuw) and abs(U[i+1,juw,kuw])>umax:
+            iuw = i+1
+            umax = abs(U[i+1,juw,kuw])
+      """
+
 
       # intialize DCy to upwind volume fraction
       DCy[i,j,k] = C[iuw,juw,kuw]*V[i,j,k]*dx*dz*dt
@@ -166,151 +203,6 @@ def compute_DC_isoadvector():
         phi[1][1][0] = get_phi_from_plic(x+dx,y+dy,z,iuw,juw,kuw)
 
         # compute the level set at the lagrangian backtracked vertices
-        phi[0][0][1] = get_phi_from_plic(Vert_loc[i,j,k][0],Vert_loc[i,j,k][1],Vert_loc[i,j,k][2],iuw,juw,kuw)
-        phi[1][0][1] = get_phi_from_plic(Vert_loc[i+1,j,k][0],Vert_loc[i+1,j,k][1],Vert_loc[i+1,j,k][2],iuw,juw,kuw)
-        phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j+1,k][0],Vert_loc[i,j+1,k][1],Vert_loc[i,j+1,k][2],iuw,juw,kuw)
-        phi[1][1][1] = get_phi_from_plic(Vert_loc[i+1,j+1,k][0],Vert_loc[i+1,j+1,k][1],Vert_loc[i+1,j+1,k][2],iuw,juw,kuw)
-
-
-        #calculate the volume fraction of the space-time volume
-        grad_phi  = ti.Vector([0.0,0.0,0.0])
-        phi_c = (phi[0][0][0]+phi[1][0][0]+phi[0][1][0]+phi[1][1][0] \
-              + phi[0][0][1]+phi[1][0][1]+phi[0][1][1]+phi[1][1][1])/8.0
-        grad_phi[0] = -(phi[0][0][0]-phi[1][0][0]+phi[0][1][0]-phi[1][1][0] \
-              + phi[0][0][1]-phi[1][0][1]+phi[0][1][1]-phi[1][1][1])/(4.0)
-        grad_phi[1] = -(phi[0][0][0]+phi[1][0][0]-phi[0][1][0]-phi[1][1][0] \
-              + phi[0][0][1]+phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/(4.0)
-        grad_phi[2] = -(phi[0][0][0]+phi[1][0][0]+phi[0][1][0]+phi[1][1][0] \
-              - phi[0][0][1]-phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/(4.0)
-
-        vf = calc_vol_frac(phi_c,grad_phi)
-        DCz[i,j,k] = vf*W[i,j,k]*dx*dy*dt
-
-@ti.func
-def check_sign(phi):
-  # check if all vertices are of the same sign
-  all_neg = True
-  all_pos = True
-  for k in ti.static(range(2)):
-    for j in ti.static(range(2)):
-      for i in ti.static(range(2)):
-        if phi[i][j][k] > 0.0:
-          all_neg = False
-        if phi[i][j][k] < 0.0:
-          all_pos = False
-  return all_neg, all_pos
-
-@ti.kernel
-def compute_DC_isoadvector():
-  # compute volume fraction fluxes using an isoadvector-like algorithm,
-  # ie. the "time integral of the submerged face area"
-  # ref: 'A Computational Method for Sharp Interface Advection'
-  for i,j,k in Flags:
-    dt = Dt[None]
-    # flux the left face
-    if is_internal_x_face(i,j,k) and is_active_x_face(i,j,k):
-      # get the "upwind" interface cell
-      iuw = i
-      juw = j
-      kuw = k
-      if U[i,j,k] > 0.0:
-        iuw = i-1
-
-      # intialize DCx to upwind volume fraction
-      DCx[i,j,k] = C[iuw,juw,kuw]*U[i,j,k]*dy*dz*dt
-      if is_interface_cell(iuw,juw,kuw):
-        # compute the level set at each vertex on this face at time t
-        phi = [[[0.0,0.0],[0.0,0.0]],
-               [[0.0,0.0],[0.0,0.0]]] # 3d array (y,z,t)
-        x,y,z = get_vert_loc(i,j,k);
-        phi[0][0][0] = get_phi_from_plic(x,y,z,iuw,juw,kuw)
-        phi[1][0][0] = get_phi_from_plic(x,y+dy,z,iuw,juw,kuw)
-        phi[0][1][0] = get_phi_from_plic(x,y,z+dz,iuw,juw,kuw)
-        phi[1][1][0] = get_phi_from_plic(x,y+dy,z+dz,iuw,juw,kuw)
-
-        # compute the level set at t+dt from the lagrangian backtracked vertices
-        phi[0][0][1] = get_phi_from_plic(Vert_loc[i,j,k][0],Vert_loc[i,j,k][1],Vert_loc[i,j,k][2],iuw,juw,kuw)
-        phi[1][0][1] = get_phi_from_plic(Vert_loc[i,j+1,k][0],Vert_loc[i,j+1,k][1],Vert_loc[i,j+1,k][2],iuw,juw,kuw)
-        phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j,k+1][0],Vert_loc[i,j,k+1][1],Vert_loc[i,j,k+1][2],iuw,juw,kuw)
-        phi[1][1][1] = get_phi_from_plic(Vert_loc[i,j+1,k+1][0],Vert_loc[i,j+1,k+1][1],Vert_loc[i,j+1,k+1][2],iuw,juw,kuw)
-
-        grad_phi  = ti.Vector([0.0,0.0,0.0])
-        phi_c = (phi[0][0][0]+phi[1][0][0]+phi[0][1][0]+phi[1][1][0] \
-              + phi[0][0][1]+phi[1][0][1]+phi[0][1][1]+phi[1][1][1])/8.0
-        grad_phi[0] = -(phi[0][0][0]-phi[1][0][0]+phi[0][1][0]-phi[1][1][0] \
-              + phi[0][0][1]-phi[1][0][1]+phi[0][1][1]-phi[1][1][1])/4.0
-        grad_phi[1] = -(phi[0][0][0]+phi[1][0][0]-phi[0][1][0]-phi[1][1][0] \
-              + phi[0][0][1]+phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/4.0
-        grad_phi[2] = -(phi[0][0][0]+phi[1][0][0]+phi[0][1][0]+phi[1][1][0] \
-              - phi[0][0][1]-phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/4.0
-
-        #calculate the volume fraction of the space-time volume
-        vf = calc_vol_frac(phi_c,grad_phi)
-        DCx[i,j,k] = vf*U[i,j,k]*dy*dz*dt
-
-    # flux the bottom face
-    if is_internal_y_face(i,j,k) and is_active_y_face(i,j,k):
-      # get the "upwind" interface cell
-      iuw = i
-      juw = j
-      kuw = k
-      if V[i,j,k] > 0.0:
-        juw = j-1
-
-      # intialize DCy to upwind volume fraction
-      DCy[i,j,k] = C[iuw,juw,kuw]*V[i,j,k]*dx*dz*dt
-      if is_interface_cell(iuw,juw,kuw):
-        # compute the level set at each vertex on this face at time t
-        phi = [[[0.0,0.0],[0.0,0.0]],
-               [[0.0,0.0],[0.0,0.0]]] # 3d array (x,z,t)
-        x,y,z = get_vert_loc(i,j,k);
-        phi[0][0][0] = get_phi_from_plic(x,y,z,iuw,juw,kuw)
-        phi[1][0][0] = get_phi_from_plic(x+dx,y,z,iuw,juw,kuw)
-        phi[0][1][0] = get_phi_from_plic(x,y,z+dz,iuw,juw,kuw)
-        phi[1][1][0] = get_phi_from_plic(x+dx,y,z+dz,iuw,juw,kuw)
-
-        # compute the level set at t+dt from the lagrangian backtracked vertices
-        phi[0][0][1] = get_phi_from_plic(Vert_loc[i,j,k][0],Vert_loc[i,j,k][1],Vert_loc[i,j,k][2],iuw,juw,kuw)
-        phi[1][0][1] = get_phi_from_plic(Vert_loc[i+1,j,k][0],Vert_loc[i+1,j,k][1],Vert_loc[i+1,j,k][2],iuw,juw,kuw)
-        phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j,k+1][0],Vert_loc[i,j,k+1][1],Vert_loc[i,j,k+1][2],iuw,juw,kuw)
-        phi[1][1][1] = get_phi_from_plic(Vert_loc[i+1,j,k+1][0],Vert_loc[i+1,j,k+1][1],Vert_loc[i+1,j,k+1][2],iuw,juw,kuw)
-
-        grad_phi  = ti.Vector([0.0,0.0,0.0])
-        phi_c = (phi[0][0][0]+phi[1][0][0]+phi[0][1][0]+phi[1][1][0] \
-              + phi[0][0][1]+phi[1][0][1]+phi[0][1][1]+phi[1][1][1])/8.0
-        grad_phi[0] = -(phi[0][0][0]-phi[1][0][0]+phi[0][1][0]-phi[1][1][0] \
-              + phi[0][0][1]-phi[1][0][1]+phi[0][1][1]-phi[1][1][1])/4.0
-        grad_phi[1] = -(phi[0][0][0]+phi[1][0][0]-phi[0][1][0]-phi[1][1][0] \
-              + phi[0][0][1]+phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/4.0
-        grad_phi[2] = -(phi[0][0][0]+phi[1][0][0]+phi[0][1][0]+phi[1][1][0] \
-              - phi[0][0][1]-phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/4.0
-
-        #calculate the volume fraction of the space-time volume
-        vf = calc_vol_frac(phi_c,grad_phi)
-        DCy[i,j,k] = vf*V[i,j,k]*dx*dz*dt
-
-    # flux the back face
-    if is_internal_z_face(i,j,k) and is_active_z_face(i,j,k):
-      # get the "upwind" interface cell
-      iuw = i
-      juw = j
-      kuw = k
-      if W[i,j,k] > 0.0:
-        kuw = k-1
-
-      # intialize DCy to upwind volume fraction
-      DCz[i,j,k] = C[iuw,juw,kuw]*W[i,j,k]*dx*dy*dt
-      if is_interface_cell(iuw,juw,kuw):
-        # compute the level set at each vertex on this face at time t
-        phi = [[[0.0,0.0],[0.0,0.0]],
-               [[0.0,0.0],[0.0,0.0]]] # 3d array
-        x,y,z = get_vert_loc(i,j,k);
-        phi[0][0][0] = get_phi_from_plic(x,y,z,iuw,juw,kuw)
-        phi[1][0][0] = get_phi_from_plic(x+dx,y,z,iuw,juw,kuw)
-        phi[0][1][0] = get_phi_from_plic(x,y+dy,z,iuw,juw,kuw)
-        phi[1][1][0] = get_phi_from_plic(x+dx,y+dy,z,iuw,juw,kuw)
-
-        # compute the level set at t+dt from the lagrangian backtracked vertices
         phi[0][0][1] = get_phi_from_plic(Vert_loc[i,j,k][0],Vert_loc[i,j,k][1],Vert_loc[i,j,k][2],iuw,juw,kuw)
         phi[1][0][1] = get_phi_from_plic(Vert_loc[i+1,j,k][0],Vert_loc[i+1,j,k][1],Vert_loc[i+1,j,k][2],iuw,juw,kuw)
         phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j+1,k][0],Vert_loc[i,j+1,k][1],Vert_loc[i,j+1,k][2],iuw,juw,kuw)

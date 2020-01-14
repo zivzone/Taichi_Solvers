@@ -2,7 +2,7 @@ import numpy as np
 import taichi as ti
 
 ti.cfg.arch = ti.x86_64
-ti.cfg.arch = ti.cuda
+#ti.cfg.arch = ti.cuda
 
 # grid parameters
 n_mg_levels = 3

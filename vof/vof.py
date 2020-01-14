@@ -9,8 +9,9 @@ from vof_visualize import *
 def main():
   initialize()
   write_C_png(0)
-
-  for i in range(n_timesteps):
+  t = 0
+  i = 0
+  while t < t_final:
     # update the narrow band
     copy_to_temp()
     clear_data()
@@ -19,18 +20,20 @@ def main():
 
     # reconstruct the interface
     reconstruct_plic()
-    #reconstruct_phi()
-
-    check_vof()
+    #reconstruct_phi_from_plic()
 
     # advect the volume fraction
-
     set_face_velocity()
-    Dt[None] = CFL*min(dx/(u_transport+small), dy/(v_transport+small))
+    Dt[None] = big
+    calc_Dt()
+    if t+Dt[None] > t_final:
+      Dt[None] = t_final-t
+
     interp_velocity_to_vertex()
     back_track_DMC()
     compute_DC_isoadvector()
     update_C()
+
     # bound volume fraction to physical values
     #for j in range(5):
     #  zero_DC_bounding()
@@ -41,16 +44,20 @@ def main():
     #apply boundary conditions
     apply_Neumann_BC()
 
-
-    if i%1 ==0:
+    if i%plot_interval==0:
+      print(Dt[None])
       print(i)
       write_band_png(i+1)
       write_C_png(i+1)
-      write_M_png(i+1)
-      #write_Phi_png(i+1)
-      #plot_interfaces()
-      #plt.show()
+      #write_M_png(i+1)
 
+    t += Dt[None]
+    i += 1
+
+  print(t)
+  write_band_png(i+1)
+  write_C_png(i+1)
+  write_M_png(i+1)
   plot_interfaces()
   plt.show()
 

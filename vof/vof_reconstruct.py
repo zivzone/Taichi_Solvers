@@ -19,20 +19,15 @@ def reconstruct_phi_from_plic():
   # of the signed distances from plic planes in nearby cells
   for i,j,k in Flags:
     if is_active_cell(i,j,k) or is_buffer_cell(i,j,k):
-      num = 0.0
-      den = 0.0
+      num = small
+      den = small
       x,y,z = get_cell_loc(i,j,k)
-      flag1 = False
-      for di,dj,dk in ti.ndrange((-2,3),(-2,3),(-2,3)):
+      for di,dj,dk in ti.ndrange((-3,4),(-3,4),(-3,4)):
         if is_interface_cell(i+di,j+dj,k+dk):
-          flag1 = True
           phi,w = get_phi_and_weight_from_plic(x,y,z,i+di,j+dj,k+dk)
           num += phi*w
           den += w
-      if flag1:
-        Phi[i,j,k] = num/(den+small)
-      else:
-        Phi[i,j,k] = big
+      Phi[i,j,k] = num/den
 
 @ti.kernel
 def reconstruct_plic_from_phi():
@@ -236,7 +231,7 @@ def ELVIRA(i, j, k):
   for dk in ti.static(range(-1,2)):
     for dj in ti.static(range(-1,2)):
       h[dj+1][dk+1] = 0.0
-      for di in ti.static(range(-2,2+1)):
+      for di in ti.static(range(-1,1+1)):
         h[dj+1][dk+1] += C[i+di,j+dj,k+dk]
 
   # forward, central, backward difference
@@ -270,7 +265,7 @@ def ELVIRA(i, j, k):
         n[0] = -1.0
 
       # make sum of components = 1 for PLIC reconstruction and reconstruct
-      rdenom = 1.0/(ti.abs(n[0]) + ti.abs(n[1]) + ti.abs(n[2]))
+      rdenom = 1.0/(ti.abs(n[0]) + ti.abs(n[1]) + ti.abs(n[2])+small)
       n[0] = -n[0]*rdenom
       n[1] = -n[1]*rdenom
       n[2] = -n[2]*rdenom
@@ -288,7 +283,7 @@ def ELVIRA(i, j, k):
   for dk in ti.static(range(-1,2)):
     for di in ti.static(range(-1,2)):
       h[di+1][dk+1] = 0.0
-      for dj in ti.static(range(-2,2+1)):
+      for dj in ti.static(range(-1,1+1)):
         h[di+1][dk+1] += C[i+di,j+dj,k+dk]
 
   # forward, central, backward differences
@@ -322,7 +317,7 @@ def ELVIRA(i, j, k):
         n[1] = -1.0
 
       # make sum of components = 1 for PLIC reconstruction and reconstruct
-      rdenom = 1.0/(ti.abs(n[0]) + ti.abs(n[1]) + ti.abs(n[2]))
+      rdenom = 1.0/(ti.abs(n[0]) + ti.abs(n[1]) + ti.abs(n[2])+small)
       n[0] = -n[0]*rdenom
       n[1] = -n[1]*rdenom
       n[2] = -n[2]*rdenom
@@ -340,7 +335,7 @@ def ELVIRA(i, j, k):
   for dj in ti.static(range(-1,2)):
     for di in ti.static(range(-1,2)):
       h[di+1][dj+1] = 0.0
-      for dk in ti.static(range(-2,2+1)):
+      for dk in ti.static(range(-1,1+1)):
         h[di+1][dj+1] += C[i+di,j+dj,k+dk]
 
   # forward, central, backward differences
@@ -374,7 +369,7 @@ def ELVIRA(i, j, k):
         n[2] = -1.0
 
       # make sum of components = 1 for PLIC reconstruction and reconstruct
-      rdenom = 1.0/(ti.abs(n[0]) + ti.abs(n[1]) + ti.abs(n[2]));
+      rdenom = 1.0/(ti.abs(n[0]) + ti.abs(n[1]) + ti.abs(n[2])+small);
       n[0] = -n[0]*rdenom
       n[1] = -n[1]*rdenom
       n[2] = -n[2]*rdenom
@@ -391,31 +386,23 @@ def ELVIRA(i, j, k):
   return m[0], m[1], m[2], alpha
 
 
-
 @ti.func
 def Young(i,j,k):
   m = ti.Vector([0.0,0.0,0.0])
-  n = ti.Vector([0.0,0.0,0.0])
-
   # average the gradient computed at eight vertices
   for di,dj,dk in ti.static(ti.ndrange((0,2),(0,2),(0,2))):
-    n[0] = ((C[i+di,j+dj,k+dk]+C[i+di,j+dj-1,k+dk]+C[i+di,j+dj,k+dk-1]+C[i+di,j+dj-1,k+dk-1]) \
+    m[0] += ((C[i+di,j+dj,k+dk]+C[i+di,j+dj-1,k+dk]+C[i+di,j+dj,k+dk-1]+C[i+di,j+dj-1,k+dk-1]) \
            -(C[i+di-1,j+dj,k+dk]+C[i+di-1,j+dj-1,k+dk]+C[i+di-1,j+dj,k+dk-1]+C[i+di-1,j+dj-1,k+dk-1]))/4.0
-    n[1] = ((C[i+di,j+dj,k+dk]+C[i+di-1,j+dj,k+dk]+C[i+di,j+dj,k+dk-1]+C[i+di-1,j+dj,k+dk-1]) \
+    m[1] += ((C[i+di,j+dj,k+dk]+C[i+di-1,j+dj,k+dk]+C[i+di,j+dj,k+dk-1]+C[i+di-1,j+dj,k+dk-1]) \
            -(C[i+di,j+dj-1,k+dk]+C[i+di-1,j+dj-1,k+dk]+C[i+di,j+dj-1,k+dk-1]+C[i+di-1,j+dj-1,k+dk-1]))/4.0
-    n[2] = ((C[i+di,j+dj,k+dk]+C[i+di-1,j+dj,k+dk]+C[i+di,j+dj-1,k+dk]+C[i+di-1,j+dj-1,k+dk]) \
+    m[2] += ((C[i+di,j+dj,k+dk]+C[i+di-1,j+dj,k+dk]+C[i+di,j+dj-1,k+dk]+C[i+di-1,j+dj-1,k+dk]) \
            -(C[i+di,j+dj,k+dk-1]+C[i+di-1,j+dj,k+dk-1]+C[i+di,j+dj-1,k+dk-1]+C[i+di-1,j+dj-1,k+dk-1]))/4.0
-    m += n
 
   m = m/8.0
-  m = -m/(ti.abs(m[0]) + ti.abs(m[1]) + ti.abs(m[2]))
+  m = -m/(ti.abs(m[0]) + ti.abs(m[1]) + ti.abs(m[2])+small)
   alpha = calc_alpha(C[i,j,k], m)
   return m[0], m[1], m[2], alpha
 
-@ti.func
-def recon_from_phi(i,j,k):
-
-  return m[0], m[1], m[2], alpha
 
 # set the reconstruction function
 recon = Young
