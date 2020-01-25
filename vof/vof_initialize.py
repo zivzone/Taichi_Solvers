@@ -116,12 +116,21 @@ def init_C(x,y,z):
         xc = x - dx/2.0 + dxc/2.0 + dxc*ii
         yc = y - dy/2.0 + dyc/2.0 + dyc*jj
         zc = z - dz/2.0 + dzc/2.0 + dzc*kk
-        phi = get_phi(xc, yc, zc)
-        grad_phi = [0.0,0.0,0.0]
-        grad_phi[0] = 0.5*(get_phi(xc+dxc, yc, zc)-get_phi(xc-dxc, yc, zc))
-        grad_phi[1] = 0.5*(get_phi(xc, yc+dyc, zc)-get_phi(xc, yc-dyc, zc))
-        grad_phi[2] = 0.5*(get_phi(xc, yc, zc+dzc)-get_phi(xc, yc, zc-dzc))
-        vol = vol + calc_vol_frac(phi,grad_phi)/(n*n*n)
+        # compute phi at subcell vertices
+        phi = [[[0.0,0.0],[0.0,0.0]],
+               [[0.0,0.0],[0.0,0.0]]] # 3d array (y,z,t)
+        phi[0][0][0] = get_phi(xc-dxc/2.0, yc-dyc/2.0, zc-dzc/2.0)
+        phi[1][0][0] = get_phi(xc+dxc/2.0, yc-dyc/2.0, zc-dzc/2.0)
+        phi[0][1][0] = get_phi(xc-dxc/2.0, yc+dyc/2.0, zc-dzc/2.0)
+        phi[1][1][0] = get_phi(xc+dxc/2.0, yc+dyc/2.0, zc-dzc/2.0)
+        phi[0][0][1] = get_phi(xc-dxc/2.0, yc-dyc/2.0, zc+dzc/2.0)
+        phi[1][0][1] = get_phi(xc+dxc/2.0, yc-dyc/2.0, zc+dzc/2.0)
+        phi[0][1][1] = get_phi(xc-dxc/2.0, yc+dyc/2.0, zc+dzc/2.0)
+        phi[1][1][1] = get_phi(xc+dxc/2.0, yc+dyc/2.0, zc+dzc/2.0)
+
+        # reconstruct a plic interface from the phi at vertices and compute volume fraction
+        alpha,m = calc_plic_from_phi(phi)
+        vol = vol + calc_C(alpha,m)/(n*n*n)
 
   return vol
 

@@ -18,26 +18,29 @@ def grow_band():
   # grow the bands, copy data from temp array back to main array where active,
   # activating different flags must be seperate kernels for now since bitwise oiperators are not atomic yet
 
-  # grow the interface band
+  # flag interface cells
   for i,j,k in Flags_temp:
     if is_internal_cell(i,j,k) and (Flags_temp[i,j,k]&flag_enum.CELL_ACTIVE)==flag_enum.CELL_ACTIVE: #use Flags_temp
       # check if this is and interface cell
-      if (C_temp[i,j,k] >= Czero and C_temp[i,j,k] <= Cone):
+      if (C_temp[i,j,k] >= interface_tol and C_temp[i,j,k] <= 1.0-interface_tol):
         Flags[i,j,k] = flag_enum.CELL_INTERFACE
       #  C[i,j,k] = C_temp[i,j,k]
       else:
         # treat cases where interface sits on cell face
-        if (C_temp[i,j,k] > Cone):
-          if (C_temp[i-1,j,k] < Czero or C_temp[i,j-1,k] < Czero or C_temp[i,j,k-1] < Czero):
+        if (C_temp[i,j,k] > 1.0-interface_tol):
+          if (C_temp[i-1,j,k] < interface_tol or C_temp[i,j-1,k] < interface_tol or C_temp[i,j,k-1] < interface_tol):
             Flags[i,j,k] = flag_enum.CELL_INTERFACE
       #      C[i,j,k] = C_temp[i,j,k]
-        elif (C_temp[i,j,k] < Czero):
-          if (C_temp[i-1,j,k] > Cone or C_temp[i,j-1,k] > Cone or C_temp[i,j,k-1] > Cone):
+        elif (C_temp[i,j,k] < interface_tol):
+          if (C_temp[i-1,j,k] > 1.0-interface_tol or C_temp[i,j-1,k] > 1.0-interface_tol or C_temp[i,j,k-1] > 1.0-interface_tol):
             Flags[i,j,k] = flag_enum.CELL_INTERFACE
       #      C[i,j,k] = C_temp[i,j,k]
 
-  # grow the active band in 4 kernels
+  # flag active cells
   for i,j,k in Flags:
+    if is_internal_cell(i,j,k) and (C_temp[i,j,k] >= active_tol and C_temp[i,j,k] <= 1.0-active_tol):
+      Flags[i,j,k] = Flags[i,j,k]|flag_enum.CELL_ACTIVE
+
     if is_internal_cell(i,j,k) and is_interface_cell(i,j,k):
       # flag interface cell and its neighbors as active
       for dk in ti.static(range(-1,2)):
@@ -45,26 +48,30 @@ def grow_band():
           for di in ti.static(range(-1,2)):
             Flags[i+di,j+dj,k+dk] = Flags[i+di,j+dj,k+dk]|flag_enum.CELL_ACTIVE
       #      C[i+di,j+dj,k+dk] = C_temp[i+di,j+dj,k+dk]
+    
 
+  # flag active x-faces
   for i,j,k in Flags:
     if is_internal_cell(i,j,k) and is_active_cell(i,j,k):
       # flag x-faces of active cell
       Flags[i,j,k] = Flags[i,j,k]|flag_enum.X_FACE_ACTIVE
       Flags[i+1,j,k] = Flags[i+1,j,k]|flag_enum.X_FACE_ACTIVE
 
+  #flag active y-faces
   for i,j,k in Flags:
     if is_internal_cell(i,j,k) and is_active_cell(i,j,k):
       # flag y-faces of active cell
       Flags[i,j,k] = Flags[i,j,k]|flag_enum.Y_FACE_ACTIVE
       Flags[i,j+1,k] = Flags[i,j+1,k]|flag_enum.Y_FACE_ACTIVE
 
+  #flag active z-faces
   for i,j,k in Flags:
     if is_internal_cell(i,j,k) and is_active_cell(i,j,k):
       # flag z-faces of active cell
       Flags[i,j,k] = Flags[i,j,k]|flag_enum.Z_FACE_ACTIVE
       Flags[i,j,k+1] = Flags[i,j,k+1]|flag_enum.Z_FACE_ACTIVE
 
-  # grow the buffer band
+  # flag buffers cells
   for i,j,k in Flags:
     if is_internal_cell(i,j,k) and is_active_cell(i,j,k) and not is_interface_cell(i,j,k):
       # flag neighbors of active cells as buffer cells

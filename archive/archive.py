@@ -297,3 +297,41 @@ def calc_vol_frac_GQ(phi):
 
     w = phi*phi/r*r
     return phi, w
+
+@ti.func
+def calc_vol_frac(phi,grad_phi):
+  # estimate volume fraction of cell using level set and its gradient
+  phim = -ti.abs(phi)
+
+  abs_grad_phi = [0.0,0.0,0.0]
+  abs_grad_phi[0] = ti.abs(grad_phi[0])
+  abs_grad_phi[1] = ti.abs(grad_phi[1])
+  abs_grad_phi[2] = ti.abs(grad_phi[2])
+  dxi   = ti.max(abs_grad_phi[0],ti.max(abs_grad_phi[1],abs_grad_phi[2]))
+  dzeta = ti.min(abs_grad_phi[0],ti.min(abs_grad_phi[1],abs_grad_phi[2]))
+  deta  = abs_grad_phi[0] + abs_grad_phi[1] + abs_grad_phi[2] - dxi - dzeta
+
+  a = ti.max(phim + 0.5 * ( dxi + deta + dzeta), 0.0)
+  b = ti.max(phim + 0.5 * ( dxi + deta - dzeta), 0.0)
+  c = ti.max(phim + 0.5 * ( dxi - deta + dzeta), 0.0)
+  d = ti.max(phim + 0.5 * (-dxi + deta + dzeta), 0.0)
+  e = ti.max(phim + 0.5 * ( dxi - deta - dzeta), 0.0)
+  vf = 0.0
+  if dxi > 1.0e-8:
+    if deta > 1.0e-8:
+      if dzeta > 1.0e-8: #  3D
+        vf = (a*a*a - b*b*b - c*c*c - d*d*d + e*e*e)/(6.0*dxi*deta*dzeta)
+      else:#  2D
+        vf = (a*a - c*c)/(2.0*dxi*deta)
+    else: #  1D
+      vf = a/dxi
+  else:  #  0D
+    if phim !=  0.0:
+      vf = 0.0
+    else:
+      vf = 0.5
+
+  if phi > 0.0:
+    vf = 1.0 - vf
+
+  return vf

@@ -1,4 +1,3 @@
-import numpy as np
 import taichi as ti
 
 ti.get_runtime().set_default_fp(ti.f64)
@@ -8,42 +7,41 @@ ti.cfg.arch = ti.x86_64
 
 # grid parameters
 # ******************************************************************************
-CFL = .25
-t_final = 10
-plot_interval = 100
+CFL = .20
+t_final = 3.0
+plot_interval = 10
 
 # internel grid size
 nx = 128
 ny = 128
-nz = 1
+nz = 4
 
 # domain dimensions
 wx = 5.0
 wy = 5.0
-wz = .001
+wz = 5.0*4/128
 
+# grig blocking params
 b_size = 4
 sb_size = b_size*4
-n_init_subcells = 2
 
 # initial phi params
-init_phi = 1 # 0 = zalesaks disk, 1 = cylinder
-init_center = [2.5, 4 , 0.0]
-init_width = 4.0
-init_height = 12.0
+n_init_subcells = 1
+init_phi = 1 # 0 = zalesaks disk, 1 = cylinder, 2=sphere, 3=plane
+init_center = [4.0, 4.0 , 0]
+init_width = .42
+init_height = 1.0
 init_radius = .75
 init_plane_dir = [.1, 1.0, 0.0]
 
 # trasport velocity
-init_vel = 0
-u_transport = 1.0
-v_transport = 1.0
+init_vel = 2# 0 = rotation, 1 = vortex in a box, 2 = transport
+u_transport = -1.0
+v_transport = -1.0
 
 # some other constants
-Czero = 1.0e-4
-Cone = 1.0-Czero
-Czero_cleanup = 5.0*Czero
-Cone_cleanup = 1.0-Czero_cleanup
+interface_tol = 1.0e-8
+active_tol = 1.0e-12
 small = 1.0e-15
 big  = 1.0e15
 
