@@ -248,13 +248,16 @@ def Young(i,j,k):
 
 
 # set the reconstruction function
-recon = Young
+recon = ELVIRA
 
 
 @ti.kernel
 def check_vof():
   ti.serialize()
   for i,j,k in Flags:
+    if is_internal_cell(i,j,k):
+      Tot_vol[None] += C[i,j,k]*vol
+
     if is_interface_cell(i,j,k):
       #calculate the volume fraction reconstructed from phi
       phi = [[[0.0,0.0],[0.0,0.0]],

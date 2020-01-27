@@ -22,25 +22,22 @@ def grow_band():
   for i,j,k in Flags_temp:
     if is_internal_cell(i,j,k) and (Flags_temp[i,j,k]&flag_enum.CELL_ACTIVE)==flag_enum.CELL_ACTIVE: #use Flags_temp
       # check if this is and interface cell
-      if (C_temp[i,j,k] >= interface_tol and C_temp[i,j,k] <= 1.0-interface_tol):
+      if (C_temp[i,j,k] >= c_zero and C_temp[i,j,k] <= c_one):
         Flags[i,j,k] = flag_enum.CELL_INTERFACE
       #  C[i,j,k] = C_temp[i,j,k]
       else:
         # treat cases where interface sits on cell face
-        if (C_temp[i,j,k] > 1.0-interface_tol):
-          if (C_temp[i-1,j,k] < interface_tol or C_temp[i,j-1,k] < interface_tol or C_temp[i,j,k-1] < interface_tol):
+        if (C_temp[i,j,k] >= c_one):
+          if (C_temp[i-1,j,k] <= c_zero or C_temp[i,j-1,k] <= c_zero or C_temp[i,j,k-1] <= c_zero):
             Flags[i,j,k] = flag_enum.CELL_INTERFACE
       #      C[i,j,k] = C_temp[i,j,k]
-        elif (C_temp[i,j,k] < interface_tol):
-          if (C_temp[i-1,j,k] > 1.0-interface_tol or C_temp[i,j-1,k] > 1.0-interface_tol or C_temp[i,j,k-1] > 1.0-interface_tol):
+    elif (C_temp[i,j,k] <= c_zero):
+          if (C_temp[i-1,j,k] >= c_one or C_temp[i,j-1,k] >= c_one or C_temp[i,j,k-1] >= c_one):
             Flags[i,j,k] = flag_enum.CELL_INTERFACE
       #      C[i,j,k] = C_temp[i,j,k]
 
   # flag active cells
   for i,j,k in Flags:
-    if is_internal_cell(i,j,k) and (C_temp[i,j,k] >= active_tol and C_temp[i,j,k] <= 1.0-active_tol):
-      Flags[i,j,k] = Flags[i,j,k]|flag_enum.CELL_ACTIVE
-
     if is_internal_cell(i,j,k) and is_interface_cell(i,j,k):
       # flag interface cell and its neighbors as active
       for dk in ti.static(range(-1,2)):
@@ -48,7 +45,7 @@ def grow_band():
           for di in ti.static(range(-1,2)):
             Flags[i+di,j+dj,k+dk] = Flags[i+di,j+dj,k+dk]|flag_enum.CELL_ACTIVE
       #      C[i+di,j+dj,k+dk] = C_temp[i+di,j+dj,k+dk]
-    
+
 
   # flag active x-faces
   for i,j,k in Flags:

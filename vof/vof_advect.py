@@ -179,22 +179,26 @@ def update_C():
 
 
 @ti.kernel
-def zero_DC_bounding():
-  for i,j,k in Flags:
-    DCx_b[i,j,k] = 0.0
-    DCy_b[i,j,k] = 0.0
-    DCz_b[i,j,k] = 0.0
-
-
-@ti.kernel
 def compute_DC_bounding():
-  # redistribute C after advection such that it is not above one or below zero
+  # redistribute C after advection in cases where the vof is very close to zero or one (above and below)
   for i,j,k in Flags:
     if is_active_cell(i,j,k):
       dt = Dt[None]
-      if C[i,j,k] > 1.0:
-        # the extra C we need to redistribute to downwind cells
-        extraC = (C[i,j,k]-1.0)*dx*dy*dz
+      # C after advection
+      c_new = C[i,j,k] + 1.0/vol*(DCx[i,j,k] - DCx[i+1,j,k] \
+                       + DCy[i,j,k] - DCy[i,j+1,k] \
+                       + DCz[i,j,k] - DCz[i,j,k+1])
+
+      # the extra C that needs to be redistributed to downwind cells
+      c_extra = 0.0
+      if c_new > c_one:
+        c_extra = c_new-1.0
+      elif c_new < c_zero:
+        c_extra = c_new
+
+      if c_new > c_one or c_new < c_zero:
+        # note that for i faces flux is negative when downwind
+        # and for i+1 faces flux is positive when downwind
 
         # sum of the downwind fluxes
         flux_x_0 = min(0.0,U[i,j,k]*dy*dz)
@@ -203,62 +207,26 @@ def compute_DC_bounding():
         flux_y_1 = max(0.0,V[i,j+1,k]*dx*dz)
         flux_z_0 = min(0.0,W[i,j,k]*dx*dy)
         flux_z_1 = max(0.0,W[i,j,k+1]*dx*dy)
+        flux_sum = -flux_x_0 + flux_x_1 - flux_y_0 + flux_y_1 - flux_z_0 + flux_z_1
 
-        flux_sum = flux_x_0 + flux_x_1 + flux_y_0 + flux_y_1 + flux_z_0 + flux_z_1
-
-        # compute redistribution deltaC
         if U[i,j,k] < 0.0:
-          DCx_b[i,j,k] =  min(flux_x_0/flux_sum*extraC*vol, flux_x_0*dt-DCx[i,j,k])
+          DCx[i,j,k] = min(max(DCx[i,j,k]+flux_x_0/flux_sum*c_extra*vol, flux_x_0*dt),0.0)
         if U[i+1,j,k] > 0.0:
-          DCx_b[i+1,j,k] =  min(flux_x_1/flux_sum*extraC*vol, flux_x_1*dt-DCx[i+1,j,k])
+          DCx[i+1,j,k] = max(min(DCx[i+1,j,k]+flux_x_1/flux_sum*c_extra*vol, flux_x_1*dt),0.0)
         if V[i,j,k] < 0.0:
-          DCy_b[i,j,k] =  min(flux_y_0/flux_sum*extraC*vol, flux_y_0*dt-DCy[i,j,k])
+          DCy[i,j,k] =  min(max(DCy[i,j,k]+flux_y_0/flux_sum*c_extra*vol, flux_y_0*dt),0.0)
         if V[i,j+1,k] > 0.0:
-          DCy_b[i,j+1,k] =  min(flux_y_1/flux_sum*extraC*vol, flux_y_1*dt-DCx[i,j+1,k])
+          DCy[i,j+1,k] = max(min(DCy[i,j+1,k]+flux_y_1/flux_sum*c_extra*vol, flux_y_1*dt),0.0)
         if W[i,j,k] < 0.0:
-          DCz_b[i,j,k] =  min(flux_z_0/flux_sum*extraC*vol, flux_z_0*dt-DCz[i,j,k])
-        if W[i,j,k+1] > 0.0:
-          DCz_b[i,j,k+1] =  min(flux_z_1/flux_sum*extraC*vol, flux_z_1*dt-DCz[i,j,k+1])
+          DCz[i,j,k] =  min(max(DCz[i,j,k]+flux_z_0/flux_sum*c_extra*vol, flux_z_0*dt),0.0)
+        if W[i,j+1,k] > 0.0:
+          DCz[i,j,k+1] = max(min(DCz[i,j,k+1]+flux_z_1/flux_sum*c_extra*vol, flux_z_1*dt),0.0)
 
-      if C[i,j,k] < 0.0:
-        # the extra C we need to redistribute to downwind cells
-        extraC = -C[i,j,k]*dx*dy*dz
 
-        # sum of the downwind fluxes
-        flux_x_0 = min(0.0,U[i,j,k]*dy*dz)
-        flux_x_1 = max(0.0,U[i+1,j,k]*dy*dz)
-        flux_y_0 = min(0.0,V[i,j,k]*dx*dz)
-        flux_y_1 = max(0.0,V[i,j+1,k]*dx*dz)
-        flux_z_0 = min(0.0,W[i,j,k]*dx*dy)
-        flux_z_1 = max(0.0,W[i,j,k+1]*dx*dy)
-
-        flux_sum = flux_x_0 + flux_x_1 + flux_y_0 + flux_y_1 + flux_z_0 + flux_z_1
-
-        # compute redistribution deltaC
-        if U[i,j,k] < 0.0:
-          DCx_b[i,j,k] =  min(flux_x_0/flux_sum*extraC*vol, DCx[i,j,k])
-        if U[i+1,j,k] > 0.0:
-          DCx_b[i+1,j,k] =  min(flux_x_1/flux_sum*extraC*vol, DCx[i+1,j,k])
-        if V[i,j,k] < 0.0:
-          DCy_b[i,j,k] =  min(flux_y_0/flux_sum*extraC*vol, DCy[i,j,k])
-        if V[i,j+1,k] > 0.0:
-          DCy_b[i,j+1,k] =  min(flux_y_1/flux_sum*extraC*vol, DCx[i,j+1,k])
-        if W[i,j,k] < 0.0:
-          DCz_b[i,j,k] =  min(flux_z_0/flux_sum*extraC*vol, DCz[i,j,k])
-        if W[i,j,k+1] > 0.0:
-          DCz_b[i,j,k+1] =  min(flux_z_1/flux_sum*extraC*vol, DCz[i,j,k+1])
-
-@ti.kernel
-def update_C_bounding():
-  for i,j,k in Flags:
-    if is_active_cell(i,j,k):
-      C[i,j,k] = C[i,j,k] + 1.0/vol*(DCx_b[i,j,k] - DCx_b[i+1,j,k] \
-                          + DCy_b[i,j,k] - DCy_b[i,j+1,k] \
-                          + DCz_b[i,j,k] - DCz_b[i,j,k+1])
 @ti.kernel
 def cleanup_C():
   for i,j,k in Flags:
-    if C[i,j,k] < active_tol:
+    if C[i,j,k] < c_zero:
       C[i,j,k] = 0.0
-    if C[i,j,k] > 1.0-active_tol:
+    if C[i,j,k] > c_one:
       C[i,j,k] = 1.0

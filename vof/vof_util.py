@@ -35,8 +35,8 @@ def get_vert_loc(i,j,k):
 ## get_velocity functions ##
 @ti.func
 def get_vel_solid_body_rotation(x,y,z):
-  u = 0.5 - y/wy
-  v = -0.5 + x/wx
+  u = -0.5 + y/wy
+  v = 0.5 - x/wx
   w = 0.0
   return u,v,w
 
@@ -137,7 +137,7 @@ def calc_plic_from_phi(phi):
           - phi[0][0][1]-phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/4.0
 
   len = ti.abs(m[0]) + ti.abs(m[1]) + ti.abs(m[2])
-  m = -m/len
+  m = m/len
   alpha = phi_c/len + 0.5*(m[0]+m[1]+m[2]) - min(0.0,m[0]) - min(0.0,m[1]) - min(0.0,m[2])
 
   return alpha,m
@@ -147,9 +147,9 @@ def calc_plic_from_phi(phi):
 def calc_C(alpha, m):
   # computes the volume fraction given the normal vector and plane constant alpha
   c = 0.0
-  if alpha < 0.0:
+  if alpha <= 0.0:
     c = 0.0
-  elif (alpha > (ti.abs(m[0])+ti.abs(m[1])+ti.abs(m[2]))):
+  elif (alpha >= (ti.abs(m[0])+ti.abs(m[1])+ti.abs(m[2]))):
     c = 1.0
   else:
     # convert normal vector into Zaleski's m vector
@@ -225,7 +225,7 @@ def calc_alpha(c, m):
   #         Note: alpha is not with respect to the lower,front,left corner of the cell. To get it for
   #         this "standard" coordinate system, coordinate mirroring (corrections to alpha) would have to
   #---------------------------------------
-  alpha = -small
+  alpha = 0.0
 
   if (c > small or c < 1.0-small):
     # convert normal vector into Zaleski's m vector

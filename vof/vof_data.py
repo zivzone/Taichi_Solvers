@@ -7,9 +7,9 @@ ti.cfg.arch = ti.x86_64
 
 # grid parameters
 # ******************************************************************************
-CFL = .20
+CFL = .24
 t_final = 3.0
-plot_interval = 10
+plot_interval = 20
 
 # internel grid size
 nx = 128
@@ -19,15 +19,15 @@ nz = 4
 # domain dimensions
 wx = 5.0
 wy = 5.0
-wz = 5.0*4/128
+wz = .0001
 
 # grig blocking params
 b_size = 4
 sb_size = b_size*4
 
 # initial phi params
-n_init_subcells = 1
-init_phi = 1 # 0 = zalesaks disk, 1 = cylinder, 2=sphere, 3=plane
+n_init_subcells = 2
+init_phi = 0 # 0 = zalesaks disk, 1 = cylinder, 2=sphere, 3=plane
 init_center = [4.0, 4.0 , 0]
 init_width = .42
 init_height = 1.0
@@ -35,15 +35,15 @@ init_radius = .75
 init_plane_dir = [.1, 1.0, 0.0]
 
 # trasport velocity
-init_vel = 2# 0 = rotation, 1 = vortex in a box, 2 = transport
+init_vel = 2 # 0 = rotation, 1 = vortex in a box, 2 = transport
 u_transport = -1.0
 v_transport = -1.0
 
 # some other constants
-interface_tol = 1.0e-8
-active_tol = 1.0e-12
 small = 1.0e-15
 big  = 1.0e15
+c_zero = 1.0e-6
+c_one = 1.0-c_zero
 
 # computed paramters
 n_ghost = 1 # vof requires 1 ghost cell
@@ -82,10 +82,8 @@ Phi = scalar()      # level set at cell center
 DCx = scalar()      # delta volume fraction on left face
 DCy = scalar()      # delta volume fraction on bottom face
 DCz = scalar()      # delta volume fraction on back face
-DCx_b = scalar()    # delta volume fraction on left face, used for bounding procedure
-DCy_b = scalar()    # delta volume fraction on bottom face, used for bounding procedure
-DCz_b = scalar()    # delta volume fraction on back face, used for bounding procedure
 Dt = scalar()       # delta t
+Tot_vol = scalar()
 
 Flags_temp = iscalar()
 C_temp = scalar()
@@ -102,10 +100,10 @@ def data():
   #  block.dense(ti.ijk, b_size).place(f)
 
   # dense array layout
-  for f in [Flags, C, M, Alpha, U, V, W, Vel_vert, Vert_loc, Phi, DCx, DCy, DCz, DCx_b, DCy_b, DCz_b]:
+  for f in [Flags, C, M, Alpha, U, V, W, Vel_vert, Vert_loc, Phi, DCx, DCy, DCz]:
     ti.root.dense(ti.ijk, [nx_tot, ny_tot, nz_tot]).place(f)
 
   for f in [Flags_temp, C_temp]:
     ti.root.dense(ti.ijk, [nx_tot, ny_tot, nz_tot]).place(f)
 
-  ti.root.place(Dt)
+  ti.root.place(Dt,Tot_vol)

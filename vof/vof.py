@@ -21,6 +21,7 @@ def main():
 
     # set the face velocities and compute timestep
     set_face_velocity()
+
     Dt[None] = big
     calc_Dt()
     if t+Dt[None] > t_final:
@@ -28,27 +29,31 @@ def main():
 
     # reconstruct the interface
     reconstruct_plic()
+
+    Tot_vol[None] = 0.0
     check_vof()
+    if i == 0:
+      init_vol = Tot_vol[None]
+
+    vol_err = init_vol-Tot_vol[None]
 
     # advect the volume fraction
     interp_velocity_to_vertex()
     back_track_DMC()
     compute_DC_isoadvector()
+    for j in range(10):
+      compute_DC_bounding()
     update_C()
-
-    # bound volume fraction to physical values
-    #for j in range(5):
-    #  zero_DC_bounding()
-    #  compute_DC_bounding()
-    #  update_C_bounding()
     cleanup_C()
 
     #apply boundary conditions
     apply_Neumann_BC()
 
-    print(i)
+
     if i%plot_interval==0:
-      print(Dt[None])
+      #print(Dt[None])
+      print(i)
+      print(vol_err)
       write_band_png(i+1)
       write_C_png(i+1)
       #write_M_png(i+1)
