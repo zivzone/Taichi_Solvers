@@ -136,7 +136,11 @@ def calc_plic_from_phi(phi):
   m[2] = -(phi[0][0][0]+phi[1][0][0]+phi[0][1][0]+phi[1][1][0] \
           - phi[0][0][1]-phi[1][0][1]-phi[0][1][1]-phi[1][1][1])/4.0
 
-  len = ti.abs(m[0]) + ti.abs(m[1]) + ti.abs(m[2])
+  # plic normal and distance
+  len = abs(m[0])+abs(m[1])+abs(m[2])
+  if len < small:
+    len = 1.0
+    m[0] = 1.0
   m = m/len
   alpha = phi_c/len + 0.5*(m[0]+m[1]+m[2]) - min(0.0,m[0]) - min(0.0,m[1]) - min(0.0,m[2])
 

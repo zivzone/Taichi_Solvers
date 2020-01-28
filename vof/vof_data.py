@@ -7,8 +7,8 @@ ti.cfg.arch = ti.x86_64
 
 # grid parameters
 # ******************************************************************************
-CFL = .24
-t_final = 3.0
+CFL = .20
+t_final = 5.0
 plot_interval = 20
 
 # internel grid size
@@ -19,7 +19,7 @@ nz = 4
 # domain dimensions
 wx = 5.0
 wy = 5.0
-wz = .0001
+wz = .01
 
 # grig blocking params
 b_size = 4
@@ -28,21 +28,21 @@ sb_size = b_size*4
 # initial phi params
 n_init_subcells = 2
 init_phi = 0 # 0 = zalesaks disk, 1 = cylinder, 2=sphere, 3=plane
-init_center = [4.0, 4.0 , 0]
+init_center = [2.5, 4.0 , 0]
 init_width = .42
 init_height = 1.0
 init_radius = .75
 init_plane_dir = [.1, 1.0, 0.0]
 
 # trasport velocity
-init_vel = 2 # 0 = rotation, 1 = vortex in a box, 2 = transport
+init_vel = 0 # 0 = rotation, 1 = vortex in a box, 2 = transport
 u_transport = -1.0
-v_transport = -1.0
+v_transport = -1.0#1.0
 
 # some other constants
 small = 1.0e-15
 big  = 1.0e15
-c_zero = 1.0e-6
+c_zero = 1.0e-5
 c_one = 1.0-c_zero
 
 # computed paramters

@@ -102,9 +102,10 @@ def compute_DC_isoadvector():
         phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j,k+1][0],Vert_loc[i,j,k+1][1],Vert_loc[i,j,k+1][2],iuw,juw,kuw)
         phi[1][1][1] = get_phi_from_plic(Vert_loc[i,j+1,k+1][0],Vert_loc[i,j+1,k+1][1],Vert_loc[i,j+1,k+1][2],iuw,juw,kuw)
 
-        #calculate the volume fraction of the space-time volume
+        #calculate the delta C from the volume fraction of the space-time volume
         alpha,m = calc_plic_from_phi(phi)
-        DCx[i,j,k] = calc_C(alpha,m)*U[i,j,k]*dy*dz*dt
+        c = max(min(calc_C(alpha,m),1.0),0.0) # # try to prevent NaN instead of just limiting
+        DCx[i,j,k] = c*U[i,j,k]*dy*dz*dt
 
     # flux the bottom face
     if is_internal_y_face(i,j,k) and is_active_y_face(i,j,k):
@@ -133,9 +134,10 @@ def compute_DC_isoadvector():
         phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j,k+1][0],Vert_loc[i,j,k+1][1],Vert_loc[i,j,k+1][2],iuw,juw,kuw)
         phi[1][1][1] = get_phi_from_plic(Vert_loc[i+1,j,k+1][0],Vert_loc[i+1,j,k+1][1],Vert_loc[i+1,j,k+1][2],iuw,juw,kuw)
 
-        #calculate the volume fraction of the space-time volume
+        #calculate the delta C from the volume fraction of the space-time volume
         alpha,m = calc_plic_from_phi(phi)
-        DCy[i,j,k] = calc_C(alpha,m)*V[i,j,k]*dx*dz*dt
+        c = max(min(calc_C(alpha,m),1.0),0.0)
+        DCy[i,j,k] = c*V[i,j,k]*dx*dz*dt
 
     # flux the back face
     if is_internal_z_face(i,j,k) and is_active_z_face(i,j,k):
@@ -164,9 +166,10 @@ def compute_DC_isoadvector():
         phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j+1,k][0],Vert_loc[i,j+1,k][1],Vert_loc[i,j+1,k][2],iuw,juw,kuw)
         phi[1][1][1] = get_phi_from_plic(Vert_loc[i+1,j+1,k][0],Vert_loc[i+1,j+1,k][1],Vert_loc[i+1,j+1,k][2],iuw,juw,kuw)
 
-        #calculate the volume fraction of the space-time volume
+        #calculate the delta C from the volume fraction of the space-time volume
         alpha,m = calc_plic_from_phi(phi)
-        DCz[i,j,k] = calc_C(alpha,m)*W[i,j,k]*dx*dy*dt
+        c = max(min(calc_C(alpha,m),1.0),0.0)
+        DCz[i,j,k] = c*W[i,j,k]*dx*dy*dt
 
 
 @ti.kernel
@@ -192,13 +195,12 @@ def compute_DC_bounding():
       # the extra C that needs to be redistributed to downwind cells
       c_extra = 0.0
       if c_new > c_one:
-        c_extra = c_new-1.0
+        c_extra = (c_new-1.0)*vol
       elif c_new < c_zero:
-        c_extra = c_new
+        c_extra = c_new*vol
 
       if c_new > c_one or c_new < c_zero:
-        # note that for i faces flux is negative when downwind
-        # and for i+1 faces flux is positive when downwind
+        # note that downwind is negative for i faces and positive for i+1 face
 
         # sum of the downwind fluxes
         flux_x_0 = min(0.0,U[i,j,k]*dy*dz)
@@ -209,18 +211,19 @@ def compute_DC_bounding():
         flux_z_1 = max(0.0,W[i,j,k+1]*dx*dy)
         flux_sum = -flux_x_0 + flux_x_1 - flux_y_0 + flux_y_1 - flux_z_0 + flux_z_1
 
+        # redistribute the extra c to downwind cells weighted by the face flux. limit the dC between the flux volume and zero
         if U[i,j,k] < 0.0:
-          DCx[i,j,k] = min(max(DCx[i,j,k]+flux_x_0/flux_sum*c_extra*vol, flux_x_0*dt),0.0)
+          DCx[i,j,k] = min(max(DCx[i,j,k]+flux_x_0/flux_sum*c_extra, flux_x_0*dt),0.0)
         if U[i+1,j,k] > 0.0:
-          DCx[i+1,j,k] = max(min(DCx[i+1,j,k]+flux_x_1/flux_sum*c_extra*vol, flux_x_1*dt),0.0)
+          DCx[i+1,j,k] = max(min(DCx[i+1,j,k]+flux_x_1/flux_sum*c_extra, flux_x_1*dt),0.0)
         if V[i,j,k] < 0.0:
-          DCy[i,j,k] =  min(max(DCy[i,j,k]+flux_y_0/flux_sum*c_extra*vol, flux_y_0*dt),0.0)
+          DCy[i,j,k] =  min(max(DCy[i,j,k]+flux_y_0/flux_sum*c_extra, flux_y_0*dt),0.0)
         if V[i,j+1,k] > 0.0:
-          DCy[i,j+1,k] = max(min(DCy[i,j+1,k]+flux_y_1/flux_sum*c_extra*vol, flux_y_1*dt),0.0)
+          DCy[i,j+1,k] = max(min(DCy[i,j+1,k]+flux_y_1/flux_sum*c_extra, flux_y_1*dt),0.0)
         if W[i,j,k] < 0.0:
-          DCz[i,j,k] =  min(max(DCz[i,j,k]+flux_z_0/flux_sum*c_extra*vol, flux_z_0*dt),0.0)
+          DCz[i,j,k] =  min(max(DCz[i,j,k]+flux_z_0/flux_sum*c_extra, flux_z_0*dt),0.0)
         if W[i,j+1,k] > 0.0:
-          DCz[i,j,k+1] = max(min(DCz[i,j,k+1]+flux_z_1/flux_sum*c_extra*vol, flux_z_1*dt),0.0)
+          DCz[i,j,k+1] = max(min(DCz[i,j,k+1]+flux_z_1/flux_sum*c_extra, flux_z_1*dt),0.0)
 
 
 @ti.kernel

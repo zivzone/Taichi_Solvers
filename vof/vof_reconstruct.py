@@ -5,12 +5,12 @@ from vof_util import *
 def reconstruct_plic():
   for i,j,k in Flags:
     if is_internal_cell(i,j,k) and is_interface_cell(i,j,k):
-      mx,my,mz,alpha = recon(i,j,k)
+      alpha,m = recon(i,j,k)
       #transform normal vector and alpha into physical space
-      Alpha[i,j,k] = alpha + min(0.0,mx) + min(0.0,my) + min(0.0,mz)
-      M[i,j,k][0] = mx/dx
-      M[i,j,k][1] = my/dy
-      M[i,j,k][2] = mz/dz
+      Alpha[i,j,k] = alpha + min(0.0,m[0]) + min(0.0,m[1]) + min(0.0,m[2])
+      M[i,j,k][0] = m[0]/dx
+      M[i,j,k][1] = m[1]/dy
+      M[i,j,k][2] = m[2]/dz
 
 
 @ti.kernel
@@ -41,10 +41,10 @@ def reconstruct_plic_from_phi():
       alpha = calc_alpha(C[i,j,k], m)
 
       #transform normal vector and alpha into physical space
-      Alpha[i,j,k] = alpha + min(0.0,mx) + min(0.0,my) + min(0.0,mz)
-      M[i,j,k][0] = mx/dx
-      M[i,j,k][1] = my/dy
-      M[i,j,k][2] = mz/dz
+      Alpha[i,j,k] = alpha + min(0.0,m[0]) + min(0.0,m[1]) + min(0.0,m[2])
+      M[i,j,k][0] = m[0]/dx
+      M[i,j,k][1] = m[1]/dy
+      M[i,j,k][2] = m[2]/dz
 
 
 @ti.func
@@ -226,7 +226,7 @@ def ELVIRA(i, j, k):
         m[1] = n[1]
         m[2] = n[2]
 
-  return m[0], m[1], m[2], alpha
+  return alpha,m
 
 
 @ti.func
@@ -242,13 +242,13 @@ def Young(i,j,k):
            -(C[i+di,j+dj,k+dk-1]+C[i+di-1,j+dj,k+dk-1]+C[i+di,j+dj-1,k+dk-1]+C[i+di-1,j+dj-1,k+dk-1]))/4.0
 
   m = m/8.0
-  m = -m/ti.max(ti.abs(m[0]) + ti.abs(m[1]) + ti.abs(m[2]),1e-50)
+  m = -m/ti.max(ti.abs(m[0]) + ti.abs(m[1]) + ti.abs(m[2]),small)
   alpha = calc_alpha(C[i,j,k], m)
-  return m[0], m[1], m[2], alpha
+  return alpha,m
 
 
 # set the reconstruction function
-recon = ELVIRA
+recon = Young
 
 
 @ti.kernel
