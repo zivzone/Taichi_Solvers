@@ -104,7 +104,7 @@ def compute_DC_isoadvector():
 
         #calculate the delta C from the volume fraction of the space-time volume
         alpha,m = calc_plic_from_phi(phi)
-        c = max(min(calc_C(alpha,m),1.0),0.0) # # try to prevent NaN instead of just limiting
+        c = max(min(calc_C(alpha,m),1.0),0.0) # # try to prevent NaN instead of just limiting;
         DCx[i,j,k] = c*U[i,j,k]*dy*dz*dt
 
     # flux the bottom face
