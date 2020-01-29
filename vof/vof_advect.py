@@ -33,7 +33,7 @@ def back_track_DMC():
       x,y,z = get_vert_loc(i,j,k)
       # x-direction
       a = 0.0
-      if Vel_vert[i,j,k][0] <= small:
+      if Vel_vert[i,j,k][0] < 0.0:
         a = (Vel_vert[i,j,k][0] - Vel_vert[i-1,j,k][0])/dx
       else:
         a = -(Vel_vert[i,j,k][0] - Vel_vert[i+1,j,k][0])/dx
@@ -44,7 +44,7 @@ def back_track_DMC():
         Vert_loc[i,j,k][0] = x - (1.0-ti.exp(-a*dt))*Vel_vert[i,j,k][0]/a
 
       # y-direction
-      if Vel_vert[i,j,k][1] <= small:
+      if Vel_vert[i,j,k][1] < 0.0:
         a = (Vel_vert[i,j,k][1] - Vel_vert[i,j-1,k][1])/dy
       else:
         a = -(Vel_vert[i,j,k][1] - Vel_vert[i,j+1,k][1])/dy
@@ -55,7 +55,7 @@ def back_track_DMC():
         Vert_loc[i,j,k][1] = y - (1.0-ti.exp(-a*dt))*Vel_vert[i,j,k][1]/a
 
       # z-direction
-      if Vel_vert[i,j,k][2] <= small:
+      if Vel_vert[i,j,k][2] < 0.0:
         a = (Vel_vert[i,j,k][2] - Vel_vert[i,j,k-1][2])/dz
       else:
         a = -(Vel_vert[i,j,k][2] - Vel_vert[i,j,k+1][2])/dz
@@ -104,7 +104,7 @@ def compute_DC_isoadvector():
 
         #calculate the delta C from the volume fraction of the space-time volume
         alpha,m = calc_plic_from_phi(phi)
-        c = max(min(calc_C(alpha,m),1.0),0.0) # # try to prevent NaN instead of just limiting;
+        c = calc_C(alpha,m)
         DCx[i,j,k] = c*U[i,j,k]*dy*dz*dt
 
     # flux the bottom face
@@ -136,7 +136,7 @@ def compute_DC_isoadvector():
 
         #calculate the delta C from the volume fraction of the space-time volume
         alpha,m = calc_plic_from_phi(phi)
-        c = max(min(calc_C(alpha,m),1.0),0.0)
+        c = calc_C(alpha,m)
         DCy[i,j,k] = c*V[i,j,k]*dx*dz*dt
 
     # flux the back face
@@ -168,7 +168,7 @@ def compute_DC_isoadvector():
 
         #calculate the delta C from the volume fraction of the space-time volume
         alpha,m = calc_plic_from_phi(phi)
-        c = max(min(calc_C(alpha,m),1.0),0.0)
+        c = calc_C(alpha,m)
         DCz[i,j,k] = c*W[i,j,k]*dx*dy*dt
 
 
@@ -194,9 +194,9 @@ def compute_DC_bounding():
 
       # the extra C that needs to be redistributed to downwind cells
       c_extra = 0.0
-      if c_new > c_one:
+      if c_new > 1.0-10.0*c_zero:
         c_extra = (c_new-1.0)*vol
-      elif c_new < c_zero:
+      elif c_new < 10.0*c_zero:
         c_extra = c_new*vol
 
       if c_new > c_one or c_new < c_zero:

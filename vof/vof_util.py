@@ -138,9 +138,6 @@ def calc_plic_from_phi(phi):
 
   # plic normal and distance
   len = abs(m[0])+abs(m[1])+abs(m[2])
-  if len < small:
-    len = 1.0
-    m[0] = 1.0
   m = m/len
   alpha = phi_c/len + 0.5*(m[0]+m[1]+m[2]) - min(0.0,m[0]) - min(0.0,m[1]) - min(0.0,m[2])
 
@@ -186,7 +183,6 @@ def calc_C(alpha, m):
 
     if (alpha > 0.5*(ti.abs(m[0])+ti.abs(m[1])+ti.abs(m[2]))):
       c = 1.0-c
-
   return c
 
 @ti.func
@@ -286,29 +282,6 @@ def calc_alpha(c, m):
 
   return alpha
 
-
-## data clearing functions ##
-@ti.kernel
-def clear_data():
-  for i,j,k in Flags:
-    Flags[i,j,k] = 0
-    #C[i,j,k] = 0.0
-    M[i,j,k] = [0.0, 0.0, 0.0]
-    Phi[i,j,k] = 0.0
-
-
-@ti.kernel
-def clear_data_temp():
-  for i,j,k in Flags_temp:
-    Flags_temp[i,j,k] = 0
-    #C_temp[i,j,k] = 0.0
-
-
-def clear_data_and_deactivate():
-  Flags.ptr.snode().parent.parent.clear_data_and_deactivate()
-
-def clear_data_and_deactivate_temp():
-  Flags_temp.ptr.snode().parent.parent.clear_data_and_deactivate()
 
 ## cell identifier functions
 @ti.func

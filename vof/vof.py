@@ -15,9 +15,9 @@ def main():
   while t < t_final:
     # update the narrow band
     copy_to_temp()
-    clear_data()
+    clear()
     grow_band()
-    clear_data_temp()
+    clear_temp()
 
     # set the face velocities and compute timestep
     set_face_velocity()
@@ -41,8 +41,8 @@ def main():
     interp_velocity_to_vertex()
     back_track_DMC()
     compute_DC_isoadvector()
-    #for j in range(3):
-    #  compute_DC_bounding()
+    for j in range(3):
+      compute_DC_bounding()
     update_C()
     cleanup_C()
 

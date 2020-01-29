@@ -61,6 +61,7 @@ dy = wy/ny
 dz = wz/nz
 vol = dx*dy*dz
 
+"""
 # setup sparse simulation data arrays
 # *****************************************************************************
 real = ti.f64
@@ -91,19 +92,75 @@ C_temp = scalar()
 @ti.layout
 def data():
   # sparse blocked layout
-  #block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).bitmasked()
-  #for f in [Flags, C, M, Alpha, U, V, W, Vel_vert, Vert_loc, Phi, DCx, DCy, DCz, DCx_b, DCy_b, DCz_b]:
-  #  block.dense(ti.ijk, b_size).place(f)
-
-  #block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).bitmasked()
-  #for f in [Flags_temp, C_temp]:
-  #  block.dense(ti.ijk, b_size).place(f)
-
-  # dense array layout
+  block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).pointer()
   for f in [Flags, C, M, Alpha, U, V, W, Vel_vert, Vert_loc, Phi, DCx, DCy, DCz]:
-    ti.root.dense(ti.ijk, [nx_tot, ny_tot, nz_tot]).place(f)
+    block.dense(ti.ijk, b_size).place(f)
 
+  block = ti.root.dense(ti.ijk, [nx_tot//b_size, ny_tot//b_size, nz_tot//b_size]).pointer()
   for f in [Flags_temp, C_temp]:
-    ti.root.dense(ti.ijk, [nx_tot, ny_tot, nz_tot]).place(f)
+    block.dense(ti.ijk, b_size).place(f)
 
   ti.root.place(Dt,Tot_vol)
+
+
+@ti.kernel
+def deactivate():
+  for i,j,k in Flags.parent().parent():
+    ti.deactivate(Flags.parent().parent(), [i,j,k])
+
+@ti.kernel
+def deactivate_temp():
+  for i,j,k in Flags_temp.parent().parent():
+    ti.deactivate(Flags_temp.parent().parent(), [i,j,k])
+"""
+
+## setup dense simulation data arrays
+vector = lambda: ti.Vector(3, dt=ti.f64, shape=(nx_tot,ny_tot,nz_tot))
+scalar = lambda: ti.var(dt=ti.f64, shape=(nx_tot,ny_tot,nz_tot))
+iscalar = lambda: ti.var(dt=ti.i32, shape=(nx_tot,ny_tot,nz_tot))
+
+Flags = iscalar()   # cell, face, vertex flags
+C = scalar()        # cell volume fraction
+M = vector()        # interface normal vector
+Alpha = scalar()    # interface offset
+U = scalar()        # x velocity on left face
+V = scalar()        # y velocity on bottom face
+W = scalar()        # z velocity on back face
+Vel_vert = vector() # velocity vector on left/bottom/back vertex
+Vert_loc = vector() # position vector of DMC backtracked vertex
+Phi = scalar()      # level set at cell center
+DCx = scalar()      # delta volume fraction on left face
+DCy = scalar()      # delta volume fraction on bottom face
+DCz = scalar()      # delta volume fraction on back face
+Dt = ti.var(dt=ti.f64, shape=())       # delta t
+Tot_vol = ti.var(dt=ti.f64, shape=())
+
+Flags_temp = iscalar()
+C_temp = scalar()
+
+## data clearing functions ##
+@ti.kernel
+def clear():
+  for i,j,k in Flags:
+    Flags[i,j,k] = 0
+    #C[i,j,k] = 0.0
+    M[i,j,k] = [0.0, 0.0, 0.0]
+    Phi[i,j,k] = 0.0
+
+@ti.kernel
+def clear_temp():
+  for i,j,k in Flags_temp:
+    Flags_temp[i,j,k] = 0
+    #C_temp[i,j,k] = 0.0
+
+class MyClass:
+  """A simple example class"""
+  i = 12345
+
+  def f(self):
+    return 'hello world'
+
+a = MyClass()
+
+for i in a:
+  print(i.f)

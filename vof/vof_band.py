@@ -24,17 +24,17 @@ def grow_band():
       # check if this is and interface cell
       if (C_temp[i,j,k] >= c_zero and C_temp[i,j,k] <= c_one):
         Flags[i,j,k] = flag_enum.CELL_INTERFACE
-      #  C[i,j,k] = C_temp[i,j,k]
+        #C[i,j,k] = C_temp[i,j,k]
       else:
         # treat cases where interface sits on cell face
         if (C_temp[i,j,k] >= c_one):
           if (C_temp[i-1,j,k] <= c_zero or C_temp[i,j-1,k] <= c_zero or C_temp[i,j,k-1] <= c_zero):
             Flags[i,j,k] = flag_enum.CELL_INTERFACE
-      #      C[i,j,k] = C_temp[i,j,k]
-    elif (C_temp[i,j,k] <= c_zero):
+            #C[i,j,k] = C_temp[i,j,k]
+        elif (C_temp[i,j,k] <= c_zero):
           if (C_temp[i-1,j,k] >= c_one or C_temp[i,j-1,k] >= c_one or C_temp[i,j,k-1] >= c_one):
             Flags[i,j,k] = flag_enum.CELL_INTERFACE
-      #      C[i,j,k] = C_temp[i,j,k]
+            #C[i,j,k] = C_temp[i,j,k]
 
   # flag active cells
   for i,j,k in Flags:
@@ -44,7 +44,7 @@ def grow_band():
         for dj in ti.static(range(-1,2)):
           for di in ti.static(range(-1,2)):
             Flags[i+di,j+dj,k+dk] = Flags[i+di,j+dj,k+dk]|flag_enum.CELL_ACTIVE
-      #      C[i+di,j+dj,k+dk] = C_temp[i+di,j+dj,k+dk]
+            #C[i+di,j+dj,k+dk] = C_temp[i+di,j+dj,k+dk]
 
 
   # flag active x-faces
@@ -77,4 +77,4 @@ def grow_band():
           for di in ti.static(range(-1,2)):
             if is_active_cell(i+di,j+dj,k+dk)==False:
               Flags[i+di,j+dj,k+dk] = Flags[i+di,j+dj,k+dk]|flag_enum.CELL_BUFFER
-      #        C[i+di,j+dj,k+dk] = C[i,j,k]
+              #C[i+di,j+dj,k+dk] = C[i,j,k]

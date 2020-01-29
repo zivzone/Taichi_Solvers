@@ -242,7 +242,13 @@ def Young(i,j,k):
            -(C[i+di,j+dj,k+dk-1]+C[i+di-1,j+dj,k+dk-1]+C[i+di,j+dj-1,k+dk-1]+C[i+di-1,j+dj-1,k+dk-1]))/4.0
 
   m = m/8.0
-  m = -m/ti.max(ti.abs(m[0]) + ti.abs(m[1]) + ti.abs(m[2]),small)
+  len = ti.abs(m[0]) + ti.abs(m[1]) + ti.abs(m[2])
+  if len < small:
+    len = small
+    m[0] = small
+    m[1] = small
+    m[2] = small
+  m = -m/len
   alpha = calc_alpha(C[i,j,k], m)
   return alpha,m
 
@@ -271,6 +277,7 @@ def check_vof():
       phi[1][0][1] = get_phi_from_plic(x+dx,y,z+dz,i,j,k)
       phi[0][1][1] = get_phi_from_plic(x,y+dy,z+dz,i,j,k)
       phi[1][1][1] = get_phi_from_plic(x+dx,y+dy,z+dz,i,j,k)
+
       alpha,m = calc_plic_from_phi(phi)
       vf = calc_C(alpha,m)
 
