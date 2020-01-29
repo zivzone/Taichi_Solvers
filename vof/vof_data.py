@@ -152,15 +152,3 @@ def clear_temp():
   for i,j,k in Flags_temp:
     Flags_temp[i,j,k] = 0
     #C_temp[i,j,k] = 0.0
-
-class MyClass:
-  """A simple example class"""
-  i = 12345
-
-  def f(self):
-    return 'hello world'
-
-a = MyClass()
-
-for i in a:
-  print(i.f)
