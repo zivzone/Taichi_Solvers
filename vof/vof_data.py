@@ -7,8 +7,8 @@ ti.cfg.arch = ti.x86_64
 
 # grid parameters
 # ******************************************************************************
-CFL = .20
-t_final = 5.0
+CFL = .25
+t_final = 10.0
 plot_interval = 20
 
 # internel grid size
@@ -36,13 +36,13 @@ init_plane_dir = [.1, 1.0, 0.0]
 
 # trasport velocity
 init_vel = 0 # 0 = rotation, 1 = vortex in a box, 2 = transport
-u_transport = -1.0
-v_transport = -1.0#1.0
+u_transport = 1.0
+v_transport = 1.0#1.0
 
 # some other constants
 small = 1.0e-15
 big  = 1.0e15
-c_zero = 1.0e-5
+c_zero = 1.0e-8
 c_one = 1.0-c_zero
 
 # computed paramters

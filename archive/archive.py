@@ -335,3 +335,55 @@ def calc_vol_frac(phi,grad_phi):
     vf = 1.0 - vf
 
   return vf
+
+@ti.kernel
+def interp_velocity_to_vertex():
+  # interpolate face center velocity components to cell vertices
+  for i,j,k in Flags:
+    if is_internal_vertex(i,j,k) or is_ghost_vertex(i,j,k):
+      Vel_vert[i,j,k][0] = (U[i,j,k] + U[i-1,j,k])/2.0
+      Vel_vert[i,j,k][1] = (V[i,j,k] + V[i,j-1,k])/2.0
+      Vel_vert[i,j,k][2] = (W[i,j,k] + W[i,j,k-1])/2.0
+
+@ti.kernel
+def back_track_DMC():
+  # compute the Dual Mesh Characteristic backtracked vertex position
+  # ref 'Dual-Mesh Characteristics for Particle-Mesh Methods for the Simulation of Convection-Dominated Flows'
+  # this is comparable in accuracy to rk4 but only takes one step
+  for i,j,k in Flags:
+    if is_internal_vertex(i,j,k):
+      dt = Dt[None]
+      x,y,z = get_vert_loc(i,j,k)
+      # x-direction
+      a = 0.0
+      if Vel_vert[i,j,k][0] < 0.0:
+        a = (Vel_vert[i,j,k][0] - Vel_vert[i-1,j,k][0])/dx
+      else:
+        a = -(Vel_vert[i,j,k][0] - Vel_vert[i+1,j,k][0])/dx
+
+      if ti.abs(a) <= small:
+        Vert_loc[i,j,k][0] = x - dt*Vel_vert[i,j,k][0]
+      else:
+        Vert_loc[i,j,k][0] = x - (1.0-ti.exp(-a*dt))*Vel_vert[i,j,k][0]/a
+
+      # y-direction
+      if Vel_vert[i,j,k][1] < 0.0:
+        a = (Vel_vert[i,j,k][1] - Vel_vert[i,j-1,k][1])/dy
+      else:
+        a = -(Vel_vert[i,j,k][1] - Vel_vert[i,j+1,k][1])/dy
+
+      if ti.abs(a) <= small:
+        Vert_loc[i,j,k][1] = y - dt*Vel_vert[i,j,k][1]
+      else:
+        Vert_loc[i,j,k][1] = y - (1.0-ti.exp(-a*dt))*Vel_vert[i,j,k][1]/a
+
+      # z-direction
+      if Vel_vert[i,j,k][2] < 0.0:
+        a = (Vel_vert[i,j,k][2] - Vel_vert[i,j,k-1][2])/dz
+      else:
+        a = -(Vel_vert[i,j,k][2] - Vel_vert[i,j,k+1][2])/dz
+
+      if ti.abs(a) <= small:
+        Vert_loc[i,j,k][2] = z - dt*Vel_vert[i,j,k][2]
+      else:
+        Vert_loc[i,j,k][2] = z - (1.0-ti.exp(-a*dt))*Vel_vert[i,j,k][2]/a

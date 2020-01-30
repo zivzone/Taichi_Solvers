@@ -244,17 +244,17 @@ def Young(i,j,k):
   m = m/8.0
   len = ti.abs(m[0]) + ti.abs(m[1]) + ti.abs(m[2])
   if len < small:
-    len = small
-    m[0] = small
-    m[1] = small
-    m[2] = small
+    len = 1.0
+    m[0] = 1.0
+    m[1] = 0.0
+    m[2] = 0.0
   m = -m/len
   alpha = calc_alpha(C[i,j,k], m)
   return alpha,m
 
 
 # set the reconstruction function
-recon = Young
+recon = ELVIRA
 
 
 @ti.kernel

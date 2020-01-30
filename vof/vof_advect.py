@@ -14,59 +14,6 @@ def calc_Dt():
 
 
 @ti.kernel
-def interp_velocity_to_vertex():
-  # interpolate face center velocity components to cell vertices
-  for i,j,k in Flags:
-    if is_internal_vertex(i,j,k) or is_ghost_vertex(i,j,k):
-      Vel_vert[i,j,k][0] = (U[i,j,k] + U[i-1,j,k])/2.0
-      Vel_vert[i,j,k][1] = (V[i,j,k] + V[i,j-1,k])/2.0
-      Vel_vert[i,j,k][2] = (W[i,j,k] + W[i,j,k-1])/2.0
-
-@ti.kernel
-def back_track_DMC():
-  # compute the Dual Mesh Characteristic backtracked vertex position
-  # ref 'Dual-Mesh Characteristics for Particle-Mesh Methods for the Simulation of Convection-Dominated Flows'
-  # this is comparable in accuracy to rk4 but only takes one step
-  for i,j,k in Flags:
-    if is_internal_vertex(i,j,k):
-      dt = Dt[None]
-      x,y,z = get_vert_loc(i,j,k)
-      # x-direction
-      a = 0.0
-      if Vel_vert[i,j,k][0] < 0.0:
-        a = (Vel_vert[i,j,k][0] - Vel_vert[i-1,j,k][0])/dx
-      else:
-        a = -(Vel_vert[i,j,k][0] - Vel_vert[i+1,j,k][0])/dx
-
-      if ti.abs(a) <= small:
-        Vert_loc[i,j,k][0] = x - dt*Vel_vert[i,j,k][0]
-      else:
-        Vert_loc[i,j,k][0] = x - (1.0-ti.exp(-a*dt))*Vel_vert[i,j,k][0]/a
-
-      # y-direction
-      if Vel_vert[i,j,k][1] < 0.0:
-        a = (Vel_vert[i,j,k][1] - Vel_vert[i,j-1,k][1])/dy
-      else:
-        a = -(Vel_vert[i,j,k][1] - Vel_vert[i,j+1,k][1])/dy
-
-      if ti.abs(a) <= small:
-        Vert_loc[i,j,k][1] = y - dt*Vel_vert[i,j,k][1]
-      else:
-        Vert_loc[i,j,k][1] = y - (1.0-ti.exp(-a*dt))*Vel_vert[i,j,k][1]/a
-
-      # z-direction
-      if Vel_vert[i,j,k][2] < 0.0:
-        a = (Vel_vert[i,j,k][2] - Vel_vert[i,j,k-1][2])/dz
-      else:
-        a = -(Vel_vert[i,j,k][2] - Vel_vert[i,j,k+1][2])/dz
-
-      if ti.abs(a) <= small:
-        Vert_loc[i,j,k][2] = z - dt*Vel_vert[i,j,k][2]
-      else:
-        Vert_loc[i,j,k][2] = z - (1.0-ti.exp(-a*dt))*Vel_vert[i,j,k][2]/a
-
-
-@ti.kernel
 def compute_DC_isoadvector():
   # compute volume fraction fluxes using an isoadvector-like algorithm,
   # ie. the "time integral of the submerged face area".
@@ -97,10 +44,19 @@ def compute_DC_isoadvector():
         phi[1][1][0] = get_phi_from_plic(x,y+dy,z+dz,iuw,juw,kuw)
 
         # compute the level set at the DMC backtracked vertices
-        phi[0][0][1] = get_phi_from_plic(Vert_loc[i,j,k][0],Vert_loc[i,j,k][1],Vert_loc[i,j,k][2],iuw,juw,kuw)
-        phi[1][0][1] = get_phi_from_plic(Vert_loc[i,j+1,k][0],Vert_loc[i,j+1,k][1],Vert_loc[i,j+1,k][2],iuw,juw,kuw)
-        phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j,k+1][0],Vert_loc[i,j,k+1][1],Vert_loc[i,j,k+1][2],iuw,juw,kuw)
-        phi[1][1][1] = get_phi_from_plic(Vert_loc[i,j+1,k+1][0],Vert_loc[i,j+1,k+1][1],Vert_loc[i,j+1,k+1][2],iuw,juw,kuw)
+        x = x-U[i,j,k]*dt
+        y = y-(V[i,j,k]+V[i-1,j,k]+V[i,j+1,k]+V[i-1,j+1,k])/4.0*dt
+        z = z-(W[i,j,k]+W[i-1,j,k]+W[i,j,k+1]+W[i-1,j,k+1])/4.0*dt
+        phi[0][0][1] = get_phi_from_plic(x,y,z,iuw,juw,kuw)
+        phi[1][0][1] = get_phi_from_plic(x,y+dy,z,iuw,juw,kuw)
+        phi[0][1][1] = get_phi_from_plic(x,y,z+dz,iuw,juw,kuw)
+        phi[1][1][1] = get_phi_from_plic(x,y+dy,z+dz,iuw,juw,kuw)
+
+        # compute the level set at the DMC backtracked vertices
+        #phi[0][0][1] = get_phi_from_plic(Vert_loc[i,j,k][0],Vert_loc[i,j,k][1],Vert_loc[i,j,k][2],iuw,juw,kuw)
+        #phi[1][0][1] = get_phi_from_plic(Vert_loc[i,j+1,k][0],Vert_loc[i,j+1,k][1],Vert_loc[i,j+1,k][2],iuw,juw,kuw)
+        #phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j,k+1][0],Vert_loc[i,j,k+1][1],Vert_loc[i,j,k+1][2],iuw,juw,kuw)
+        #phi[1][1][1] = get_phi_from_plic(Vert_loc[i,j+1,k+1][0],Vert_loc[i,j+1,k+1][1],Vert_loc[i,j+1,k+1][2],iuw,juw,kuw)
 
         #calculate the delta C from the volume fraction of the space-time volume
         alpha,m = calc_plic_from_phi(phi)
@@ -129,10 +85,18 @@ def compute_DC_isoadvector():
         phi[1][1][0] = get_phi_from_plic(x+dx,y,z+dz,iuw,juw,kuw)
 
         # compute the level set at the lagrangian backtracked vertices
-        phi[0][0][1] = get_phi_from_plic(Vert_loc[i,j,k][0],Vert_loc[i,j,k][1],Vert_loc[i,j,k][2],iuw,juw,kuw)
-        phi[1][0][1] = get_phi_from_plic(Vert_loc[i+1,j,k][0],Vert_loc[i+1,j,k][1],Vert_loc[i+1,j,k][2],iuw,juw,kuw)
-        phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j,k+1][0],Vert_loc[i,j,k+1][1],Vert_loc[i,j,k+1][2],iuw,juw,kuw)
-        phi[1][1][1] = get_phi_from_plic(Vert_loc[i+1,j,k+1][0],Vert_loc[i+1,j,k+1][1],Vert_loc[i+1,j,k+1][2],iuw,juw,kuw)
+        x = x-(U[i,j,k]+U[i,j-1,k]+U[i+1,j,k]+U[i+1,j-1,k])/4.0*dt
+        y = y-V[i,j,k]*dt
+        z = z-(W[i,j,k]+W[i,j-1,k]+W[i,j,k+1]+W[i,j-1,k+1])/4.0*dt
+        phi[0][0][1] = get_phi_from_plic(x,y,z,iuw,juw,kuw)
+        phi[1][0][1] = get_phi_from_plic(x+dx,y,z,iuw,juw,kuw)
+        phi[0][1][1] = get_phi_from_plic(x,y,z+dz,iuw,juw,kuw)
+        phi[1][1][1] = get_phi_from_plic(x+dx,y,z+dz,iuw,juw,kuw)
+
+        #phi[0][0][1] = get_phi_from_plic(Vert_loc[i,j,k][0],Vert_loc[i,j,k][1],Vert_loc[i,j,k][2],iuw,juw,kuw)
+        #phi[1][0][1] = get_phi_from_plic(Vert_loc[i+1,j,k][0],Vert_loc[i+1,j,k][1],Vert_loc[i+1,j,k][2],iuw,juw,kuw)
+        #phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j,k+1][0],Vert_loc[i,j,k+1][1],Vert_loc[i,j,k+1][2],iuw,juw,kuw)
+        #phi[1][1][1] = get_phi_from_plic(Vert_loc[i+1,j,k+1][0],Vert_loc[i+1,j,k+1][1],Vert_loc[i+1,j,k+1][2],iuw,juw,kuw)
 
         #calculate the delta C from the volume fraction of the space-time volume
         alpha,m = calc_plic_from_phi(phi)
@@ -161,10 +125,17 @@ def compute_DC_isoadvector():
         phi[1][1][0] = get_phi_from_plic(x+dx,y+dy,z,iuw,juw,kuw)
 
         # compute the level set at the lagrangian backtracked vertices
-        phi[0][0][1] = get_phi_from_plic(Vert_loc[i,j,k][0],Vert_loc[i,j,k][1],Vert_loc[i,j,k][2],iuw,juw,kuw)
-        phi[1][0][1] = get_phi_from_plic(Vert_loc[i+1,j,k][0],Vert_loc[i+1,j,k][1],Vert_loc[i+1,j,k][2],iuw,juw,kuw)
-        phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j+1,k][0],Vert_loc[i,j+1,k][1],Vert_loc[i,j+1,k][2],iuw,juw,kuw)
-        phi[1][1][1] = get_phi_from_plic(Vert_loc[i+1,j+1,k][0],Vert_loc[i+1,j+1,k][1],Vert_loc[i+1,j+1,k][2],iuw,juw,kuw)
+        x = x-(U[i,j,k]+U[i,j,k-1]+U[i+1,j,k]+U[i+1,j,k-1])/4.0*dt
+        y = y-(V[i,j,k]+V[i,j,k-1]+V[i,j+1,k]+V[i,j+1,k-1])/4.0*dt
+        z = z-W[i,j,k]*dt
+        phi[0][0][1] = get_phi_from_plic(x,y,z,iuw,juw,kuw)
+        phi[1][0][1] = get_phi_from_plic(x+dx,y,z,iuw,juw,kuw)
+        phi[0][1][1] = get_phi_from_plic(x,y+dy,z,iuw,juw,kuw)
+        phi[1][1][1] = get_phi_from_plic(x+dx,y+dy,z,iuw,juw,kuw)
+        #phi[0][0][1] = get_phi_from_plic(Vert_loc[i,j,k][0],Vert_loc[i,j,k][1],Vert_loc[i,j,k][2],iuw,juw,kuw)
+        #phi[1][0][1] = get_phi_from_plic(Vert_loc[i+1,j,k][0],Vert_loc[i+1,j,k][1],Vert_loc[i+1,j,k][2],iuw,juw,kuw)
+        #phi[0][1][1] = get_phi_from_plic(Vert_loc[i,j+1,k][0],Vert_loc[i,j+1,k][1],Vert_loc[i,j+1,k][2],iuw,juw,kuw)
+        #phi[1][1][1] = get_phi_from_plic(Vert_loc[i+1,j+1,k][0],Vert_loc[i+1,j+1,k][1],Vert_loc[i+1,j+1,k][2],iuw,juw,kuw)
 
         #calculate the delta C from the volume fraction of the space-time volume
         alpha,m = calc_plic_from_phi(phi)
@@ -194,9 +165,9 @@ def compute_DC_bounding():
 
       # the extra C that needs to be redistributed to downwind cells
       c_extra = 0.0
-      if c_new > 1.0-10.0*c_zero:
+      if c_new > c_one:
         c_extra = (c_new-1.0)*vol
-      elif c_new < 10.0*c_zero:
+      elif c_new < c_zero:
         c_extra = c_new*vol
 
       if c_new > c_one or c_new < c_zero:

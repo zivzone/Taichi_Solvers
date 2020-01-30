@@ -41,7 +41,7 @@ def main():
     interp_velocity_to_vertex()
     back_track_DMC()
     compute_DC_isoadvector()
-    for j in range(3):
+    for j in range(10):
       compute_DC_bounding()
     update_C()
     cleanup_C()
