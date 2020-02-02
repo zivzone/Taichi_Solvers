@@ -22,7 +22,7 @@ def reconstruct_phi_from_plic():
       num = small
       den = small
       x,y,z = get_cell_loc(i,j,k)
-      for di,dj,dk in ti.ndrange((-3,4),(-3,4),(-3,4)):
+      for di,dj,dk in ti.ndrange((-1,2),(-1,2),(-1,2)):
         if is_interface_cell(i+di,j+dj,k+dk):
           phi,w = get_phi_and_weight_from_plic(x,y,z,i+di,j+dj,k+dk)
           num += phi*w
@@ -87,7 +87,7 @@ def ELVIRA(i, j, k):
   hzf = (h[1][2] - h[1][1])
 
   # loop over all possible differences
-  for kk in range(3): # dont use ti.static(range()) so that loop doesnt unroll, this decreases compiile time
+  for kk in range(3): # dont use ti.static(range()) so that loop doesnt unroll
     for jj in range(3):
       if jj == 0:
         n[1] = hyb
@@ -262,7 +262,7 @@ def check_vof():
   ti.serialize()
   for i,j,k in Flags:
     if is_internal_cell(i,j,k):
-      Tot_vol[None] += C[i,j,k]*vol
+      Tot_vol[None] = Tot_vol[None] + C[i,j,k]*vol
 
     if is_interface_cell(i,j,k):
       #calculate the volume fraction reconstructed from phi
@@ -281,7 +281,7 @@ def check_vof():
       alpha,m = calc_plic_from_phi(phi)
       vf = calc_C(alpha,m)
 
-      if abs(C[i,j,k] - vf) > 1.0e-12:
+      if abs(C[i,j,k] - vf) > c_zero:
         print(vf)
         print(C[i,j,k])
         print(m[0])

@@ -39,6 +39,7 @@ def grow_band():
   # flag active cells
   for i,j,k in Flags:
     if is_internal_cell(i,j,k) and is_interface_cell(i,j,k):
+      #Flags[i,j,k] = Flags[i,j,k]|flag_enum.CELL_ACTIVE
       # flag interface cell and its neighbors as active
       for dk in ti.static(range(-1,2)):
         for dj in ti.static(range(-1,2)):

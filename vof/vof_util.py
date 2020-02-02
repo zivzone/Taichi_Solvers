@@ -166,7 +166,7 @@ def calc_C(alpha, m):
 
     m12 = m1 + m2
     mm  = ti.min(m12,m3)
-    pr  = ti.max(6.0*m1*m2*m3,1.0e-50)
+    pr  = ti.max(6.0*m1*m2*m3,small)
     V1  = m1*m1*m1/pr
 
     if (a <  m1):
@@ -240,7 +240,7 @@ def calc_alpha(c, m):
 
     # get ranges: V1<V2<v3;
     m12 = m1 + m2
-    pr  = ti.max(6.0*m1*m2*m3,1.0e-50)
+    pr  = ti.max(6.0*m1*m2*m3,small)
     V1  = m1*m1*m1/pr
     V2  = V1 + 0.5*(m2-m1)/m3
     V3  = 0.0

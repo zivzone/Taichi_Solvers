@@ -1,0 +1,150 @@
+[T 01/31/20 15:36:41.098] [logging.cpp:Logger@68] Taichi core started. Thread ID = 4498
+[I 01/31/20 15:36:41.402] [memory_pool.cpp:MemoryPool@14] Memory pool created. Default buffer size per allocator = 1024 MB
+[I 01/31/20 15:36:41.476] [llvm_jit_ptx.cpp:CUDAContext@154] Using CUDA Device [id=0]: GeForce GTX 1650
+[I 01/31/20 15:36:41.476] [llvm_jit_ptx.cpp:CUDAContext@162] CUDA Device Compute Capability: 7.5
+[I 01/31/20 15:36:41.518] [taichi_llvm_context.cpp:TaichiLLVMContext@57] Creating llvm context for arch: x86_64
+[I 01/31/20 15:36:41.532] [/home/klozes/Documents/software/taichi/python/taichi/lang/impl.py:materialize@124] Materializing layout...
+[T 01/31/20 15:36:41.542] [taichi_llvm_context.cpp:compile_runtime_bitcode@110] Compiling runtime module bitcode...
+[I 01/31/20 15:36:42.094] [struct_llvm.cpp:operator()@286] Allocating data structure of size 20971536 B
+[I 01/31/20 15:36:42.099] [unified_allocator.cpp:UnifiedAllocator@42] Allocating virtual address space of size 1024 MB
+Initializing runtime with 41 snode(s)...
+Runtime initialized.
+[D 01/31/20 15:36:42.106] [memory_pool.cpp:daemon@103] Processing memory alloc request 0
+[D 01/31/20 15:36:42.106] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.106] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7a9000
+[D 01/31/20 15:36:42.107] [memory_pool.cpp:daemon@103] Processing memory alloc request 1
+[D 01/31/20 15:36:42.107] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.107] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7ac000
+[D 01/31/20 15:36:42.108] [memory_pool.cpp:daemon@103] Processing memory alloc request 2
+[D 01/31/20 15:36:42.108] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.108] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7af000
+[D 01/31/20 15:36:42.109] [memory_pool.cpp:daemon@103] Processing memory alloc request 3
+[D 01/31/20 15:36:42.109] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.109] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7b2000
+[D 01/31/20 15:36:42.111] [memory_pool.cpp:daemon@103] Processing memory alloc request 4
+[D 01/31/20 15:36:42.111] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.111] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7b5000
+[D 01/31/20 15:36:42.112] [memory_pool.cpp:daemon@103] Processing memory alloc request 5
+[D 01/31/20 15:36:42.112] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.112] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7b8000
+[D 01/31/20 15:36:42.113] [memory_pool.cpp:daemon@103] Processing memory alloc request 6
+[D 01/31/20 15:36:42.113] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.113] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7bb000
+[D 01/31/20 15:36:42.114] [memory_pool.cpp:daemon@103] Processing memory alloc request 7
+[D 01/31/20 15:36:42.114] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.114] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7be000
+[D 01/31/20 15:36:42.115] [memory_pool.cpp:daemon@103] Processing memory alloc request 8
+[D 01/31/20 15:36:42.115] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.115] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7c1000
+[D 01/31/20 15:36:42.116] [memory_pool.cpp:daemon@103] Processing memory alloc request 9
+[D 01/31/20 15:36:42.116] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.116] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7c4000
+[D 01/31/20 15:36:42.117] [memory_pool.cpp:daemon@103] Processing memory alloc request 10
+[D 01/31/20 15:36:42.117] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.117] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7c7000
+[D 01/31/20 15:36:42.118] [memory_pool.cpp:daemon@103] Processing memory alloc request 11
+[D 01/31/20 15:36:42.118] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.118] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7ca000
+[D 01/31/20 15:36:42.119] [memory_pool.cpp:daemon@103] Processing memory alloc request 12
+[D 01/31/20 15:36:42.120] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.120] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7cd000
+[D 01/31/20 15:36:42.121] [memory_pool.cpp:daemon@103] Processing memory alloc request 13
+[D 01/31/20 15:36:42.121] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.121] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7d0000
+[D 01/31/20 15:36:42.122] [memory_pool.cpp:daemon@103] Processing memory alloc request 14
+[D 01/31/20 15:36:42.122] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.122] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7d3000
+[D 01/31/20 15:36:42.123] [memory_pool.cpp:daemon@103] Processing memory alloc request 15
+[D 01/31/20 15:36:42.123] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.123] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7d6000
+[D 01/31/20 15:36:42.124] [memory_pool.cpp:daemon@103] Processing memory alloc request 16
+[D 01/31/20 15:36:42.124] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.124] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7d9000
+[D 01/31/20 15:36:42.125] [memory_pool.cpp:daemon@103] Processing memory alloc request 17
+[D 01/31/20 15:36:42.125] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.125] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7dc000
+[D 01/31/20 15:36:42.126] [memory_pool.cpp:daemon@103] Processing memory alloc request 18
+[D 01/31/20 15:36:42.126] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.126] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7df000
+[D 01/31/20 15:36:42.127] [memory_pool.cpp:daemon@103] Processing memory alloc request 19
+[D 01/31/20 15:36:42.127] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.127] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7e2000
+[D 01/31/20 15:36:42.129] [memory_pool.cpp:daemon@103] Processing memory alloc request 20
+[D 01/31/20 15:36:42.129] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.129] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7e5000
+[D 01/31/20 15:36:42.130] [memory_pool.cpp:daemon@103] Processing memory alloc request 21
+[D 01/31/20 15:36:42.130] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.130] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7e8000
+[D 01/31/20 15:36:42.131] [memory_pool.cpp:daemon@103] Processing memory alloc request 22
+[D 01/31/20 15:36:42.131] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.131] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7eb000
+[D 01/31/20 15:36:42.132] [memory_pool.cpp:daemon@103] Processing memory alloc request 23
+[D 01/31/20 15:36:42.132] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.132] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7ee000
+[D 01/31/20 15:36:42.133] [memory_pool.cpp:daemon@103] Processing memory alloc request 24
+[D 01/31/20 15:36:42.133] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.133] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7f1000
+[D 01/31/20 15:36:42.134] [memory_pool.cpp:daemon@103] Processing memory alloc request 25
+[D 01/31/20 15:36:42.134] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.134] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7f4000
+[D 01/31/20 15:36:42.135] [memory_pool.cpp:daemon@103] Processing memory alloc request 26
+[D 01/31/20 15:36:42.135] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.135] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7f7000
+[D 01/31/20 15:36:42.136] [memory_pool.cpp:daemon@103] Processing memory alloc request 27
+[D 01/31/20 15:36:42.136] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.136] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7fa000
+[D 01/31/20 15:36:42.137] [memory_pool.cpp:daemon@103] Processing memory alloc request 28
+[D 01/31/20 15:36:42.137] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.137] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b7fd000
+[D 01/31/20 15:36:42.139] [memory_pool.cpp:daemon@103] Processing memory alloc request 29
+[D 01/31/20 15:36:42.139] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.139] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b800000
+[D 01/31/20 15:36:42.140] [memory_pool.cpp:daemon@103] Processing memory alloc request 30
+[D 01/31/20 15:36:42.140] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.140] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b803000
+[D 01/31/20 15:36:42.141] [memory_pool.cpp:daemon@103] Processing memory alloc request 31
+[D 01/31/20 15:36:42.141] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.141] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b806000
+[D 01/31/20 15:36:42.142] [memory_pool.cpp:daemon@103] Processing memory alloc request 32
+[D 01/31/20 15:36:42.142] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.142] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b809000
+[D 01/31/20 15:36:42.143] [memory_pool.cpp:daemon@103] Processing memory alloc request 33
+[D 01/31/20 15:36:42.143] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.143] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b80c000
+[D 01/31/20 15:36:42.144] [memory_pool.cpp:daemon@103] Processing memory alloc request 34
+[D 01/31/20 15:36:42.144] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.144] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b80f000
+[D 01/31/20 15:36:42.145] [memory_pool.cpp:daemon@103] Processing memory alloc request 35
+[D 01/31/20 15:36:42.145] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.145] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b812000
+[D 01/31/20 15:36:42.146] [memory_pool.cpp:daemon@103] Processing memory alloc request 36
+[D 01/31/20 15:36:42.146] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.146] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b815000
+[D 01/31/20 15:36:42.148] [memory_pool.cpp:daemon@103] Processing memory alloc request 37
+[D 01/31/20 15:36:42.148] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.148] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b818000
+[D 01/31/20 15:36:42.149] [memory_pool.cpp:daemon@103] Processing memory alloc request 38
+[D 01/31/20 15:36:42.149] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.149] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b81b000
+[D 01/31/20 15:36:42.150] [memory_pool.cpp:daemon@103] Processing memory alloc request 39
+[D 01/31/20 15:36:42.150] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.150] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b81e000
+[D 01/31/20 15:36:42.151] [memory_pool.cpp:daemon@103] Processing memory alloc request 40
+[D 01/31/20 15:36:42.151] [memory_pool.cpp:daemon@110]   Allocating memory 8232 B (alignment 4096B) 
+[D 01/31/20 15:36:42.151] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b821000
+[D 01/31/20 15:36:42.152] [memory_pool.cpp:daemon@103] Processing memory alloc request 41
+[D 01/31/20 15:36:42.152] [memory_pool.cpp:daemon@110]   Allocating memory 3145728 B (alignment 4096B) 
+[D 01/31/20 15:36:42.152] [memory_pool.cpp:daemon@112]   Allocated. Ptr = 0x7fbc5b824000
+[I 01/31/20 15:36:42.157] [/home/klozes/Documents/software/taichi/python/taichi/lang/kernel.py:materialize@180] Compiling kernel init_blocks_c10_0_...
+[I 01/31/20 15:36:42.207] [/home/klozes/Documents/software/taichi/python/taichi/lang/kernel.py:materialize@180] Compiling kernel init_cells_c12_0_...
+[I 01/31/20 15:36:42.312] [/home/klozes/Documents/software/taichi/python/taichi/lang/kernel.py:materialize@180] Compiling kernel C_to_img_c44_0_...
+[I 01/31/20 15:36:42.357] [/home/klozes/Documents/software/taichi/python/taichi/lang/kernel.py:materialize@180] Compiling kernel copy_to_temp_c14_0_...
+[I 01/31/20 15:36:42.402] [/home/klozes/Documents/software/taichi/python/taichi/lang/kernel.py:materialize@180] Compiling kernel clear_c4_0_...
+[I 01/31/20 15:36:42.447] [/home/klozes/Documents/software/taichi/python/taichi/lang/kernel.py:materialize@180] Compiling kernel grow_band_c18_0_...
+[I 01/31/20 15:36:42.771] [/home/klozes/Documents/software/taichi/python/taichi/lang/kernel.py:materialize@180] Compiling kernel clear_temp_c6_0_...
+[I 01/31/20 15:36:42.810] [/home/klozes/Documents/software/taichi/python/taichi/lang/kernel.py:materialize@180] Compiling kernel set_face_velocity_c8_0_...
+[I 01/31/20 15:36:42.888] [/home/klozes/Documents/software/taichi/python/taichi/lang/kernel.py:materialize@180] Compiling kernel calc_Dt_c28_0_...
+[I 01/31/20 15:36:42.966] [/home/klozes/Documents/software/taichi/python/taichi/lang/kernel.py:materialize@180] Compiling kernel reconstruct_plic_c20_0_...
+[I 01/31/20 15:36:43.597] [/home/klozes/Documents/software/taichi/python/taichi/lang/kernel.py:materialize@180] Compiling kernel check_vof_c26_0_...
+[I 01/31/20 15:36:43.766] [/home/klozes/Documents/software/taichi/python/taichi/lang/kernel.py:materialize@180] Compiling kernel compute_DC_isoadvector_c30_0_...
+[Taichi version 0.4.1, cuda 10.0, commit ae3b61bc]
