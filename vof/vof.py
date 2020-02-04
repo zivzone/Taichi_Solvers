@@ -59,9 +59,8 @@ def main():
   print(t)
   write_band_png(i+1)
   write_C_png(i+1)
-  #write_M_png(i+1)
-  plot_interfaces()
-  plt.show()
+  #plot_interfaces()
+  #plt.show()
 
 
 

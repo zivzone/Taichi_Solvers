@@ -63,9 +63,9 @@ def calc_lsq_vof_error(alpha, m, i, j, k):
 def ELVIRA(i, j, k):
   # reconstruct planar interface using ELVIRA
   # check all possible normal vectors using forward, central, and backward differrences
-  h = [[0.0,0.0,0.0],[0.0,0.0,0.0],[0.0,0.0,0.0]]
-  n = [0.0,0.0,0.0]
-  m = [0.0,0.0,0.0]
+  n = ti.Vector.zero(real, 3)
+  m = ti.Vector.zero(real, 3)
+  h = ti.Matrix.zero(real, 3, 3)
   alpha = 0.0
 
   errorMin = 1.0e20
@@ -73,18 +73,18 @@ def ELVIRA(i, j, k):
   # x-heights
   for dk in ti.static(range(-1,2)):
     for dj in ti.static(range(-1,2)):
-      h[dj+1][dk+1] = 0.0
+      h[dj+1,dk+1] = 0.0
       for di in ti.static(range(-1,1+1)):
-        h[dj+1][dk+1] += C[i+di,j+dj,k+dk]
+        h[dj+1,dk+1] += C[i+di,j+dj,k+dk]
 
   # forward, central, backward difference
-  hyb = (h[1][1] - h[0][1])
-  hyc = (h[2][1] - h[0][1])*.5
-  hyf = (h[2][1] - h[1][1])
+  hyb = (h[1,1] - h[0,1])
+  hyc = (h[2,1] - h[0,1])*.5
+  hyf = (h[2,1] - h[1,1])
 
-  hzb = (h[1][1] - h[1][0])
-  hzc = (h[1][2] - h[1][0])*.5
-  hzf = (h[1][2] - h[1][1])
+  hzb = (h[1,1] - h[1,0])
+  hzc = (h[1,2] - h[1,0])*.5
+  hzf = (h[1,2] - h[1,1])
 
   # loop over all possible differences
   for kk in range(3): # dont use ti.static(range()) so that loop doesnt unroll
@@ -125,18 +125,18 @@ def ELVIRA(i, j, k):
   # y-heights
   for dk in ti.static(range(-1,2)):
     for di in ti.static(range(-1,2)):
-      h[di+1][dk+1] = 0.0
+      h[di+1,dk+1] = 0.0
       for dj in ti.static(range(-1,1+1)):
-        h[di+1][dk+1] += C[i+di,j+dj,k+dk]
+        h[di+1,dk+1] += C[i+di,j+dj,k+dk]
 
   # forward, central, backward differences
-  hxb = (h[1][1] - h[0][1])
-  hxc = (h[2][1] - h[0][1])*.5
-  hxf = (h[2][1] - h[1][1])
+  hxb = (h[1,1] - h[0,1])
+  hxc = (h[2,1] - h[0,1])*.5
+  hxf = (h[2,1] - h[1,1])
 
-  hzb = (h[1][1] - h[1][0])
-  hzc = (h[1][2] - h[1][0])*.5
-  hzf = (h[1][2] - h[1][1])
+  hzb = (h[1,1] - h[1,0])
+  hzc = (h[1,2] - h[1,0])*.5
+  hzf = (h[1,2] - h[1,1])
 
   # loop over all possible differences
   for kk in range(3):
@@ -177,18 +177,18 @@ def ELVIRA(i, j, k):
   # z-heights
   for dj in ti.static(range(-1,2)):
     for di in ti.static(range(-1,2)):
-      h[di+1][dj+1] = 0.0
+      h[di+1,dj+1] = 0.0
       for dk in ti.static(range(-1,1+1)):
-        h[di+1][dj+1] += C[i+di,j+dj,k+dk]
+        h[di+1,dj+1] += C[i+di,j+dj,k+dk]
 
   # forward, central, backward differences
-  hxb = (h[1][1] - h[0][1])
-  hxc = (h[2][1] - h[0][1])*.5
-  hxf = (h[2][1] - h[1][1])
+  hxb = (h[1,1] - h[0,1])
+  hxc = (h[2,1] - h[0,1])*.5
+  hxf = (h[2,1] - h[1,1])
 
-  hyb = (h[1][1] - h[1][0])
-  hyc = (h[1][2] - h[1][0])*.5
-  hyf = (h[1][2] - h[1][1])
+  hyb = (h[1,1] - h[1,0])
+  hyc = (h[1,2] - h[1,0])*.5
+  hyf = (h[1,2] - h[1,1])
 
   # loop over all possible differences
   for jj in range(3):
@@ -263,8 +263,22 @@ def check_vof():
   for i,j,k in Flags:
     if is_internal_cell(i,j,k):
       Tot_vol[None] = Tot_vol[None] + C[i,j,k]*vol
-    """
+
     if is_interface_cell(i,j,k):
+      m = ti.Vector.zero(real,3)
+      m[0] = M[i,j,k][0]*dx
+      m[1] = M[i,j,k][1]*dy
+      m[2] = M[i,j,k][2]*dz
+      alpha = Alpha[i,j,k] - min(0.0,m[0]) - min(0.0,m[1]) - min(0.0,m[2])
+      vf = calc_C(alpha,m)
+      if abs(C[i,j,k] - vf) > small:
+        print(vf)
+        print(C[i,j,k])
+        print(m[0])
+        print(m[1])
+        print(m[2])
+
+      """
       #calculate the volume fraction reconstructed from phi
       phi = [[[0.0,0.0],[0.0,0.0]],
              [[0.0,0.0],[0.0,0.0]]] # 3d array (y,z,t)
@@ -277,15 +291,12 @@ def check_vof():
       phi[1][0][1] = get_phi_from_plic(x+dx,y,z+dz,i,j,k)
       phi[0][1][1] = get_phi_from_plic(x,y+dy,z+dz,i,j,k)
       phi[1][1][1] = get_phi_from_plic(x+dx,y+dy,z+dz,i,j,k)
-
       alpha,m = calc_plic_from_phi(phi)
       vf = calc_C(alpha,m)
-
-      if abs(C[i,j,k] - vf) > 1.0e-10:
+      if abs(C[i,j,k] - vf) > small:
         print(vf)
         print(C[i,j,k])
         print(m[0])
         print(m[1])
         print(m[2])
-
-    """
+      """

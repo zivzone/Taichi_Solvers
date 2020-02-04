@@ -1,12 +1,9 @@
 import taichi as ti
 
 ti.get_runtime().set_default_fp(ti.f64)
-#ti.cfg.print_ir = True
 
-ti.cfg.arch = ti.x86_64
-#ti.cfg.arch = ti.cuda
-
-
+#ti.cfg.arch = ti.x86_64
+ti.cfg.arch = ti.cuda
 
 # grid parameters
 # ******************************************************************************
@@ -15,8 +12,8 @@ t_final = 10
 plot_interval = 20
 
 # internel grid size
-nx = 128
-ny = 128
+nx = 256
+ny = 256
 nz = 4
 
 # domain dimensions
@@ -45,7 +42,7 @@ v_transport = 1.0
 # some other constants
 small = 1.0e-15
 big  = 1.0e15
-c_zero = 1.0e-8
+c_zero = 1.0e-6
 c_one = 1.0-c_zero
 
 # computed paramters

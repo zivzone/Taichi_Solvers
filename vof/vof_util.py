@@ -343,7 +343,7 @@ class flag_enum(IntFlag):
   CELL_ACTIVE = auto()
   CELL_INTERFACE = auto()
   CELL_BUFFER = auto()
-  
+
 @ti.func
 def is_interface_cell(i,j,k):
   return Flags[i,j,k]&flag_enum.CELL_INTERFACE==flag_enum.CELL_INTERFACE
