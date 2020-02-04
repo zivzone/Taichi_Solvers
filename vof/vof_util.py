@@ -6,29 +6,23 @@ from vof_data import *
 ## location functions ##
 @ti.func
 def get_block_loc(ib,jb,kb):
-  x = ib*dx*b_size + dx*b_size/2.0 - nx_ext*dx
-  y = jb*dy*b_size + dy*b_size/2.0 - ny_ext*dy
-  z = kb*dz*b_size + dz*b_size/2.0 - nz_ext*dz
+  x = ti.cast(ib*dx*b_size + dx*b_size/2.0 - nx_ext*dx, ti.f64)
+  y = ti.cast(jb*dy*b_size + dy*b_size/2.0 - ny_ext*dy, ti.f64)
+  z = ti.cast(kb*dz*b_size + dz*b_size/2.0 - nz_ext*dz, ti.f64)
   return x,y,z
 
 @ti.func
 def get_cell_loc(i,j,k):
-  x = i*dx + dx/2.0 - nx_ext*dx
-  y = j*dy + dy/2.0 - ny_ext*dy
-  z = k*dz + dz/2.0 - nz_ext*dz
+  x = ti.cast(i*dx + dx/2.0 - nx_ext*dx, ti.f64)
+  y = ti.cast(j*dy + dy/2.0 - ny_ext*dy, ti.f64)
+  z = ti.cast(k*dz + dz/2.0 - nz_ext*dz, ti.f64)
   return x,y,z
 
 @ti.func
 def get_vert_loc(i,j,k):
-  x = i*dx - nx_ext*dx
-  y = j*dy - ny_ext*dy
-  z = k*dz - nz_ext*dz
-  return x,y,z
-
-def get_vert_loc(i,j,k):
-  x = i*dx - nx_ext*dx
-  y = j*dy - ny_ext*dy
-  z = k*dz - nz_ext*dz
+  x = ti.cast(i*dx - nx_ext*dx, ti.f64)
+  y = ti.cast(j*dy - ny_ext*dy, ti.f64)
+  z = ti.cast(k*dz - nz_ext*dz, ti.f64)
   return x,y,z
 
 
@@ -349,10 +343,7 @@ class flag_enum(IntFlag):
   CELL_ACTIVE = auto()
   CELL_INTERFACE = auto()
   CELL_BUFFER = auto()
-  X_FACE_ACTIVE = auto()
-  Y_FACE_ACTIVE = auto()
-  Z_FACE_ACTIVE = auto()
-
+  
 @ti.func
 def is_interface_cell(i,j,k):
   return Flags[i,j,k]&flag_enum.CELL_INTERFACE==flag_enum.CELL_INTERFACE

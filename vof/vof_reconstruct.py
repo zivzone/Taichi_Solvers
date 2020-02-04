@@ -263,7 +263,7 @@ def check_vof():
   for i,j,k in Flags:
     if is_internal_cell(i,j,k):
       Tot_vol[None] = Tot_vol[None] + C[i,j,k]*vol
-
+    """
     if is_interface_cell(i,j,k):
       #calculate the volume fraction reconstructed from phi
       phi = [[[0.0,0.0],[0.0,0.0]],
@@ -281,9 +281,11 @@ def check_vof():
       alpha,m = calc_plic_from_phi(phi)
       vf = calc_C(alpha,m)
 
-      if abs(C[i,j,k] - vf) > c_zero:
+      if abs(C[i,j,k] - vf) > 1.0e-10:
         print(vf)
         print(C[i,j,k])
         print(m[0])
         print(m[1])
         print(m[2])
+
+    """

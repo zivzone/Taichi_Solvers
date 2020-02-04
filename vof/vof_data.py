@@ -1,13 +1,16 @@
 import taichi as ti
 
 ti.get_runtime().set_default_fp(ti.f64)
+#ti.cfg.print_ir = True
 
 ti.cfg.arch = ti.x86_64
 #ti.cfg.arch = ti.cuda
 
+
+
 # grid parameters
 # ******************************************************************************
-CFL = .24
+CFL = .25
 t_final = 10
 plot_interval = 20
 
@@ -28,10 +31,10 @@ sb_size = b_size*4
 # initial phi params
 n_init_subcells = 2
 init_phi = 1 # 0 = zalesaks disk, 1 = cylinder, 2=sphere, 3=plane
-init_center = [2.0, 2.0 , 0]
+init_center = [2.5, 3.5 , 0]
 init_width = .42
-init_height = 1.0
-init_radius = .75
+init_height = 1.5
+init_radius = 1.0
 init_plane_dir = [.1, 1.0, 0.0]
 
 # trasport velocity
@@ -109,8 +112,8 @@ def clear():
 def clear_temp():
   for i,j,k in Flags_temp.parent().parent():
     ti.deactivate(Flags_temp.parent().parent(), [i,j,k])
-"""
 
+"""
 ## setup dense simulation data arrays
 real = ti.f64
 vector = lambda: ti.Vector(3, dt=real, shape=(nx_tot,ny_tot,nz_tot))

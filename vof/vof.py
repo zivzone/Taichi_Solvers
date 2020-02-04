@@ -46,14 +46,12 @@ def main():
     #apply boundary conditions
     apply_Neumann_BC()
 
-
     if i%plot_interval==0:
       #print(Dt[None])
       print(i)
       write_band_png(i+1)
       write_C_png(i+1)
       print(vol_err)
-
 
     t += Dt[None]
     i += 1

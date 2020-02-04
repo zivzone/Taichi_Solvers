@@ -23,7 +23,7 @@ def compute_DC_isoadvector():
   for i,j,k in Flags:
     dt = Dt[None]
     # flux the left face
-    if is_internal_x_face(i,j,k) and is_active_x_face(i,j,k):
+    if is_internal_x_face(i,j,k) and (is_active_cell(i,j,k) or is_active_cell(i-1,j,k)):
       # get the "upwind" interface cell
       iuw = i
       juw = j
@@ -58,7 +58,7 @@ def compute_DC_isoadvector():
         DCx[i,j,k] = c*U[i,j,k]*dy*dz*dt
 
     # flux the bottom face
-    if is_internal_y_face(i,j,k) and is_active_y_face(i,j,k):
+    if is_internal_y_face(i,j,k) and (is_active_cell(i,j,k) or is_active_cell(i,j-1,k)):
       # get the "upwind" interface cell
       iuw = i
       juw = j
@@ -93,7 +93,7 @@ def compute_DC_isoadvector():
         DCy[i,j,k] = c*V[i,j,k]*dx*dz*dt
 
     # flux the back face
-    if is_internal_z_face(i,j,k) and is_active_z_face(i,j,k):
+    if is_internal_z_face(i,j,k) and (is_active_cell(i,j,k) or is_active_cell(i,j,k-1)):
       # get the "upwind" interface cell
       iuw = i
       juw = j
@@ -139,7 +139,7 @@ def update_C():
 
 @ti.kernel
 def compute_DC_bounding():
-  # modify fluxes to redistribute C after advection in cases where the vof is very close to zero or one (above and below)
+  # modify fluxes to redistribute C after advection in cases where C is very close to zero or one (above and below)
   for i,j,k in Flags:
     if is_active_cell(i,j,k):
       dt = Dt[None]
@@ -203,15 +203,34 @@ def compute_DC_bounding():
 
         wt_sum = -wt_x_0 + wt_x_1 - wt_y_0 + wt_y_1 - wt_z_0 + wt_z_1
 
+        if wt_x_0 != 0.0:
+          DCx[i,j,k] = DCx[i,j,k]+wt_x_0/wt_sum*c_extra
+
+        if wt_x_1 != 0.0:
+          DCx[i+1,j,k] = DCx[i+1,j,k]+wt_x_1/wt_sum*c_extra
+
+        if wt_y_0 != 0.0:
+          DCy[i,j,k] =  DCy[i,j,k]+wt_y_0/wt_sum*c_extra
+
+        if wt_y_1 != 0.0:
+          DCy[i,j+1,k] = DCy[i,j+1,k]+wt_y_1/wt_sum*c_extra
+
+        if wt_z_0 != 0.0:
+          DCz[i,j,k] =  DCz[i,j,k]+wt_z_0/wt_sum*c_extra
+
+        if wt_z_1 != 0.0:
+          DCz[i,j,k+1] = DCz[i,j,k+1]+wt_z_1/wt_sum*c_extra
+
+        """
         # sum of the downwind fluxes
         # note that downwind is negative for i faces and positive for i+1 face
-        #flux_x_0 = min(0.0,U[i,j,k]*dy*dz)
-        #flux_x_1 = max(0.0,U[i+1,j,k]*dy*dz)
-        #flux_y_0 = min(0.0,V[i,j,k]*dx*dz)
-        #flux_y_1 = max(0.0,V[i,j+1,k]*dx*dz)
-        #flux_z_0 = min(0.0,W[i,j,k]*dx*dy)
-        #flux_z_1 = max(0.0,W[i,j,k+1]*dx*dy)
-        #flux_sum = -flux_x_0 + flux_x_1 - flux_y_0 + flux_y_1 - flux_z_0 + flux_z_1
+        wt_x_0 = min(0.0,U[i,j,k]*dy*dz)
+        wt_x_1 = max(0.0,U[i+1,j,k]*dy*dz)
+        wt_y_0 = min(0.0,V[i,j,k]*dx*dz)
+        wt_y_1 = max(0.0,V[i,j+1,k]*dx*dz)
+        wt_z_0 = min(0.0,W[i,j,k]*dx*dy)
+        wt_z_1 = max(0.0,W[i,j,k+1]*dx*dy)
+        wt_sum = -wt_x_0 + wt_x_1 - wt_y_0 + wt_y_1 - wt_z_0 + wt_z_1
 
         # modify deltaC's to redistribute the extra c to active downwind cells weighted by the face flux.
         # limit the dC bewtween 0 and 100% of the flux volume
@@ -232,7 +251,7 @@ def compute_DC_bounding():
 
         if wt_z_1 != 0.0:
           DCz[i,j,k+1] = max(min(DCz[i,j,k+1]+wt_z_1/wt_sum*c_extra, W[i,j,k+1]*dx*dy*dt),0.0)
-
+        """
 
 
 @ti.kernel
